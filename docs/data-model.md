@@ -81,6 +81,12 @@ Both are acceptable — a family preference, not a correctness flag. It lives
 on the order rather than per-decedent because a shared monument carries one
 closing line.
 
+**3b. `inscription_line.hebrew_text` is free text.** Lines are not fixed
+slots — any line may carry a personal message. A `source` column
+(`'template'` / `'family'`) is worth adding so the UI knows which lines carry
+a known English gloss and which need a generated translation, and so
+structural validation is applied only where it is meaningful.
+
 **4. 28 is the form's line capacity**, measured — see
 `domain/eagle-granite-form.md` §3. The check constraint means an
 over-long line cannot be persisted at all, rather than being discovered at
