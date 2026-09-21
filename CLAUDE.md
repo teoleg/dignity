@@ -7,13 +7,15 @@ Guidance for AI assistants working in this repository.
 ## Repository status
 
 **The deterministic core exists and is tested.** `src/lib/` holds the
-character table, the Hebrew date logic and the inscription composer, with 53
-passing tests. There is no application around it yet — no Next.js app, no
-database, no UI.
+character table, the Hebrew date logic, the inscription composer, and the
+form renderer, with 76 passing tests. It goes end to end: names and a
+Gregorian date in, a filled PDF of the vendor's own form out. There is no
+application around it yet — no Next.js app, no database, no UI.
 
 ```
-npm test          # vitest, 53 tests
+npm test          # vitest, 76 tests
 npm run typecheck # tsc --noEmit, strict
+npx tsx scripts/render-sample.ts <blank-image> out.pdf
 ```
 
 Everything in `docs/decisions/` beyond ADR 0002 describes work not yet built.
@@ -139,6 +141,8 @@ The short version of the hard parts:
 | `src/lib/form-table.ts` | The 1–31 table, `encodeLine`/`decodeLine`, right-to-left layout |
 | `src/lib/hebrew-date.ts` | `@hebcal/core` wrapper; the sunset rule and unknown-time ambiguity |
 | `src/lib/inscription.ts` | Composes the standard lines; capacity and blockers |
+| `src/lib/form-grid.ts` | Detects the 5×28 box grid on a blank; refuses anything else |
+| `src/lib/form-render.ts` | Draws the numbers onto the vendor's blank, out as PDF |
 
 Design notes that are easy to undo by accident:
 
@@ -155,6 +159,15 @@ Design notes that are easy to undo by accident:
   silently altered.
 - `layOutRightToLeft` is the only place that knows about fill direction. The
   encoder has no opinion about it and so cannot silently reverse anything.
+- **`detectGrid` throws rather than returning a near-miss.** It asserts five
+  rows of twenty-eight with an even pitch. A grid that is nearly right is the
+  dangerous case — every number lands in the wrong box and nothing looks
+  wrong — so "nearly" is rejected too.
+- **The blank is a runtime asset, never committed.** `renderForm` takes it as
+  an argument. In production it is stored per `order.form_revision`, so a
+  revised form is a new asset rather than a code change.
+- `prepareBlank`'s scan cleaning only touches pixels that are light *and*
+  unsaturated, so it cannot erase a rule the detector needs.
 
 ## What to do next
 
@@ -198,7 +211,8 @@ the images, and do not put real names or dates into committed files.
 CLAUDE.md               this file
 package.json            npm test · npm run typecheck
 src/lib/                the tested core — see "What is built"
-src/lib/__tests__/      53 tests
+src/lib/__tests__/      76 tests
+scripts/render-sample.ts  dev utility: fill a blank and write a PDF
 docs/domain/
   hebrew-inscriptions.md  Hebrew, calendar, gematria, naming
   eagle-granite-form.md   the vendor form: code table, layout, house style
