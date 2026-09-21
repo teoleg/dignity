@@ -167,6 +167,16 @@ body{margin:0;background:var(--ground);color:var(--ink);
 .gatecard p{color:var(--ink-2);font-size:14.5px;margin:0 0 16px}
 .gatecard input{width:100%;font:inherit;font-size:16px;height:var(--tap);padding:0 13px;
  border:1px solid var(--rule-2);border-radius:9px;background:var(--ground);color:var(--ink);margin-bottom:10px}
+
+/* The filled form, shown in the conversation so a phone can act on it. */
+.formshot{display:block;margin:10px 0;border:1px solid var(--rule-2);border-radius:8px;
+ overflow:hidden;background:#fff}
+.formshot img{display:block;width:100%;height:auto}
+
+/* Asking for the blank order sheet. */
+.gatecard p.small{font-size:14px;color:var(--ink-2)}
+.gatecard ul{margin:0 0 12px;padding-left:18px;font-size:14px;color:var(--ink-2)}
+.gatecard li{margin:4px 0}
 </style>
 </head>
 <body>
@@ -178,6 +188,23 @@ body{margin:0;background:var(--ground);color:var(--ink);
     <input id="gatepass" type="password" autocomplete="off" placeholder="Code" autofocus>
     <button class="btn wide" style="margin-top:0" type="submit">Continue</button>
   </form>
+</div>
+
+<div class="gate" id="blanknote" hidden>
+  <div class="gatecard">
+    <h1>One thing I need</h1>
+    <p>I fill in the cemetery's own order sheet — the paper one with the rows
+       of little numbered boxes. I don't have a copy of the blank sheet, so I
+       need a picture of yours.</p>
+    <ul>
+      <li>Lay the blank sheet flat and photograph the whole page.</li>
+      <li>Any photo already in your camera roll works too.</li>
+      <li>I only need it once on this phone.</li>
+    </ul>
+    <p class="small">Nothing you send is kept anywhere but this phone.</p>
+    <button class="btn wide" id="blankpick" type="button">Choose or take the photo</button>
+    <button class="btn wide ghost" id="blankskip" type="button" style="margin-top:8px">Not now</button>
+  </div>
 </div>
 
 <div class="app">

@@ -5,19 +5,21 @@
  * pure — it takes `{data, width, height}` greyscale bytes — and canvas
  * produces exactly that, so grid detection is the *same tested code* here.
  * Only decoding and drawing differ.
+ *
+ * The output here is a picture, not a PDF: it is meant to land in a phone's
+ * photo library, which is somewhere the family can find it again, print from
+ * and keep a history in. `src/lib/form-render.ts` still produces the PDF for
+ * anything server-side.
  */
 
-import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import { detectGrid, placeBoxes, type FormGrid, type Greyscale } from "../lib/form-grid.js";
 import { layOutRightToLeft, type Box } from "../lib/form-table.js";
-
-export const PAGE = { width: 792, height: 612 } as const;
 
 /** Decode an image to greyscale bytes, optionally dropping pencil and haze. */
 export async function prepareBlank(
   src: Blob | string,
   clean = false,
-): Promise<{ grey: Greyscale; png: Blob }> {
+): Promise<{ grey: Greyscale; png: Blob; canvas: HTMLCanvasElement }> {
   const bitmap = await createImageBitmap(
     typeof src === "string" ? await (await fetch(src)).blob() : src,
   );
@@ -52,51 +54,61 @@ export async function prepareBlank(
   const png = await new Promise<Blob>((res, rej) =>
     canvas.toBlob((b) => (b ? res(b) : rej(new Error("toBlob failed"))), "image/png"),
   );
-  return { grey: { data: grey, width: canvas.width, height: canvas.height }, png };
+  return { grey: { data: grey, width: canvas.width, height: canvas.height }, png, canvas };
 }
 
-export interface RenderedForm {
-  pdf: Uint8Array;
+export interface RenderedImage {
+  png: Uint8Array;
   grid: FormGrid;
   boxesFilled: number;
+  width: number;
+  height: number;
 }
 
-/** Draw the numbers onto the vendor's blank. Nothing else is drawn. */
-export async function renderForm(
+/**
+ * The same filled form as a picture.
+ *
+ * A phone can keep a picture in its photo library, print it from there, and
+ * show a history of what was saved. A PDF on a phone goes somewhere less
+ * obvious. The numbers are drawn straight onto the blank — the vendor's
+ * artwork is still the template (ADR 0004) — on a canvas scaled up so the
+ * digits stay legible when the picture is printed.
+ */
+export async function renderImage(
   blank: Blob | string,
   lines: readonly (readonly Box[])[],
-  opts: { margin?: number; cleanScan?: boolean } = {},
-): Promise<RenderedForm> {
-  const margin = opts.margin ?? 18;
-  const { grey, png } = await prepareBlank(blank, opts.cleanScan ?? false);
+  opts: { cleanScan?: boolean; minWidth?: number } = {},
+): Promise<RenderedImage> {
+  const { grey, canvas: src } = await prepareBlank(blank, opts.cleanScan ?? false);
   const grid = detectGrid(grey); // throws unless it really is the form
 
-  const pdf = await PDFDocument.create();
-  const page = pdf.addPage([PAGE.width, PAGE.height]);
-  const image = await pdf.embedPng(await png.arrayBuffer());
-  const font = await pdf.embedFont(StandardFonts.HelveticaBold);
-
-  const scale = Math.min(
-    (PAGE.width - 2 * margin) / grid.width,
-    (PAGE.height - 2 * margin) / grid.height,
-  );
-  const drawW = grid.width * scale;
-  const drawH = grid.height * scale;
-  const originX = (PAGE.width - drawW) / 2;
-  const originY = (PAGE.height - drawH) / 2;
-  page.drawImage(image, { x: originX, y: originY, width: drawW, height: drawH });
+  // Upscale before drawing, not after: the digits are drawn at the larger
+  // size rather than being magnified, so printing stays sharp.
+  const scale = Math.max(1, Math.min(4, (opts.minWidth ?? 2400) / src.width));
+  const out = document.createElement("canvas");
+  out.width = Math.round(src.width * scale);
+  out.height = Math.round(src.height * scale);
+  const ctx = out.getContext("2d");
+  if (!ctx) throw new Error("canvas 2d context unavailable");
+  ctx.imageSmoothingQuality = "high";
+  ctx.drawImage(src, 0, 0, out.width, out.height);
 
   const placements = placeBoxes(grid, lines.map((l) => layOutRightToLeft(l)));
-  const size = Math.max(6, (grid.rows[0]!.bottom - grid.rows[0]!.top) * scale * 0.42);
-  for (const p of placements) {
-    const text = String(p.code);
-    page.drawText(text, {
-      x: originX + p.x * scale - font.widthOfTextAtSize(text, size) / 2,
-      y: originY + (grid.height - p.y) * scale - size * 0.36,
-      size,
-      font,
-      color: rgb(0, 0, 0),
-    });
-  }
-  return { pdf: await pdf.save(), grid, boxesFilled: placements.length };
+  const size = Math.max(8, (grid.rows[0]!.bottom - grid.rows[0]!.top) * scale * 0.5);
+  ctx.fillStyle = "#000";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.font = `bold ${size}px Helvetica, Arial, sans-serif`;
+  for (const p of placements) ctx.fillText(String(p.code), p.x * scale, p.y * scale);
+
+  const blob = await new Promise<Blob>((res, rej) =>
+    out.toBlob((b) => (b ? res(b) : rej(new Error("toBlob failed"))), "image/png"),
+  );
+  return {
+    png: new Uint8Array(await blob.arrayBuffer()),
+    grid,
+    boxesFilled: placements.length,
+    width: out.width,
+    height: out.height,
+  };
 }

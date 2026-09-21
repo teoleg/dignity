@@ -7,7 +7,7 @@
  * Hebrew date, the encoding, the filled form — is the same tested library.
  */
 
-import { renderForm } from "./render-browser.js";
+import { renderImage } from "./render-browser.js";
 import { encodeLine, BOXES_PER_LINE, LINES_PER_FORM, type Box } from "../lib/form-table.js";
 import { derive } from "../lib/conversation.js";
 import type { Draft, Message, Turn } from "../lib/conversation.js";
@@ -27,8 +27,15 @@ export interface Driver {
   advance(history: readonly Message[], draft: Draft): Promise<Turn>;
 }
 
-/** How this build hands the viewer a file. */
-export type Saver = (filename: string, data: Uint8Array) => Promise<void>;
+/**
+ * How this build hands the viewer the finished form.
+ *
+ * The filled form is a picture, so that a phone can keep it in its photo
+ * library, print it from there, and show every version that was saved.
+ * `mime` is passed rather than guessed from the name: a wrong type on a
+ * phone is the difference between "Save Image" and a file nobody can find.
+ */
+export type Saver = (filename: string, data: Uint8Array, mime: string) => Promise<void>;
 
 export interface StartOptions {
   driver: Driver;
@@ -271,8 +278,8 @@ function offerNext() {
   asked.offered = true;
   const el = bubble(
     "d",
-    `<p><strong>That is everything.</strong> Here is the order form, filled in.</p>
-     <button class="btn wide" id="chatdl" type="button">Download the filled form (PDF)</button>
+    `<p><strong>That is everything.</strong> I can fill in the order form now.</p>
+     <button class="btn wide" id="chatdl" type="button">Make the filled form</button>
      <button class="btn wide ghost" id="chatcheck" type="button" style="margin-top:8px">Check every line first</button>`,
   );
   el.querySelector("#chatdl")?.addEventListener("click", () => void download("chatdl"));
@@ -368,7 +375,7 @@ function render() {
     <h3 class="sub">The order form that gets sent</h3>
     <div class="formscroll"><div class="formwide">${sheet}</div></div>
     <p class="swipe">Swipe sideways to see all ${BOXES_PER_LINE} boxes. We fill them right to left — you never type a number.</p>
-    <button class="btn wide" id="dl" ${ready ? "" : "disabled"}>${ready ? "Download the filled form (PDF)" : "Not ready yet"}</button>`;
+    <button class="btn wide" id="dl" ${ready ? "" : "disabled"}>${ready ? "Make the filled form" : "Not ready yet"}</button>`;
 
   const dl = document.getElementById("dl");
   if (dl && ready) dl.addEventListener("click", () => void download("dl"));
@@ -385,46 +392,95 @@ function boxesOf(s: string): Box[] {
   return r.ok ? r.boxes : [];
 }
 
-/* ------------------------------------------------------------ download */
+/* ---------------------------------------------------------- the form */
 
-/** The last PDF built, so tapping again does not rebuild or re-ask. */
+/** The last picture built, so tapping again does not rebuild or re-ask. */
 let builtFor = "";
-let builtPdf: Uint8Array | null = null;
+let builtPng: Uint8Array | null = null;
+
+/** Which inscription the picture on screen is of, so it is shown once. */
+let shownKey = "";
+let shownEl: HTMLElement | null = null;
+
+/** Show the filled form in the conversation, where a phone can act on it. */
+function showForm(png: Uint8Array): HTMLElement {
+  const bytes = new Uint8Array(png.byteLength);
+  bytes.set(png);
+  const url = URL.createObjectURL(new Blob([bytes.buffer], { type: "image/png" }));
+  const el = bubble(
+    "d",
+    `<p>Here is the order form with the numbers filled in.</p>
+     <a class="formshot" href="${url}" target="_blank" rel="noopener">
+       <img src="${url}" alt="The order form, filled in">
+     </a>
+     <button class="btn wide" id="savepic" type="button">Save it to your photos</button>
+     <p class="hint">Or press and hold the picture and choose <strong>Add to Photos</strong>.
+     Print it from there. Saving again after a change keeps both versions.</p>`,
+  );
+  const btn = el.querySelector("#savepic") as HTMLButtonElement | null;
+  btn?.addEventListener("click", () => {
+    if (!saveFile) return;
+    btn.disabled = true;
+    const was = btn.textContent;
+    void saveFile("monument-order-form.png", bytes, "image/png")
+      .then(() => {
+        btn.textContent = "Saved";
+      })
+      .catch(() => {
+        btn.textContent = "Could not save — press and hold the picture instead";
+      })
+      .finally(() => {
+        btn.disabled = false;
+        setTimeout(() => {
+          if (btn.textContent === "Saved") btn.textContent = was ?? "Save it to your photos";
+        }, 4000);
+      });
+  });
+  return el;
+}
 
 async function download(which: "dl" | "chatdl" = "dl") {
   const btn = document.getElementById(which) as HTMLButtonElement | null;
   if (!btn) return;
-  const label = btn.textContent ?? "Download the filled form (PDF)";
+  const label = btn.textContent ?? "Make the filled form";
   /** Whatever happens, the viewer must be left able to try again. */
   const restore = (text?: string) => {
     btn.disabled = false;
     btn.textContent = text ?? label;
   };
   btn.disabled = true;
-  btn.textContent = "Building the form…";
+  btn.textContent = "Filling the form…";
   try {
     if (!blankSource && askForBlank) {
-      btn.textContent = "Choose the order form…";
+      btn.textContent = "Waiting for the blank form…";
       blankSource = await askForBlank();
     }
     if (!blankSource) {
       // Cancelled the picker. Do not strand the button.
-      restore("Pick the blank form to continue");
-      setTimeout(() => restore(), 3000);
+      restore("I need the blank order sheet first — tap to choose it");
+      setTimeout(() => restore(), 4000);
       return;
     }
-    if (!saveFile) throw new Error("saving unavailable");
     // Rebuild only when the inscription itself changed.
     const key = lines.map((l) => l.hebrew).join("|");
-    if (builtFor !== key || !builtPdf) {
-      const out = await renderForm(blankSource, lines.map((l) => l.boxes), { cleanScan: true });
-      builtPdf = out.pdf;
+    if (builtFor !== key || !builtPng) {
+      const out = await renderImage(blankSource, lines.map((l) => l.boxes), { cleanScan: true });
+      builtPng = out.png;
       builtFor = key;
     }
-    await saveFile("monument-order-form.pdf", builtPdf);
-    restore("Downloaded — tap to save again");
+    $("sheet-checks").hidden = true;
+    // Same inscription, same picture: scroll back to it rather than posting a
+    // second copy. A changed inscription gets its own, so the conversation
+    // keeps every version that was made.
+    if (shownKey === key && shownEl?.isConnected) {
+      shownEl.scrollIntoView({ block: "center" });
+    } else {
+      shownEl = showForm(builtPng);
+      shownKey = key;
+    }
+    restore("Show the form again");
   } catch (e) {
-    restore("Could not build the form — tap to retry");
+    restore("Could not fill the form — tap to retry");
     // eslint-disable-next-line no-console
     console.error(e);
   }

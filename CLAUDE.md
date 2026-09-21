@@ -171,7 +171,7 @@ The short version of the hard parts:
 | `src/lib/conversation.ts` | Model-driven dialogue — logic only, **no SDK import** |
 | `src/lib/conversation-claude.ts` | Server driver: the Anthropic SDK |
 | `src/browser/ask-claude.ts` | Browser driver: the artifact `sample` capability |
-| `src/browser/render-browser.ts` | Canvas + pdf-lib twin of `form-render.ts` |
+| `src/browser/render-browser.ts` | Canvas twin of `form-render.ts`; out as a picture |
 | `src/browser/app.ts` | The page — UI only; the transport is injected |
 | `src/browser/entry-artifact.ts` | Artifact build: model via `sample` |
 | `src/browser/entry-web.ts` | Hosted build: model via `/api/chat` |
@@ -226,8 +226,17 @@ Design notes that are easy to undo by accident:
   unparseable turn is a failed turn, never a partially applied one.
 - **`form-grid.ts` runs unchanged in the browser.** It takes greyscale bytes,
   which canvas produces. Only decoding and drawing differ between
-  `form-render.ts` (sharp) and `render-browser.ts` (canvas + pdf-lib); the
-  detection and placement are the same tested code.
+  `form-render.ts` (sharp, PDF) and `render-browser.ts` (canvas, picture);
+  the detection and placement are the same tested code.
+- **On a phone the finished form is a picture, not a PDF.** A picture goes
+  into the photo library, where a family can find it again, print it, and see
+  every version they saved — a PDF on a phone goes somewhere less obvious.
+  The page also leaves the picture on screen, because pressing and holding it
+  is the one route to the photo library that works without any permission.
+- **The blank order sheet never comes from this repository.** It is the
+  vendor's artwork and is not committed; a viewer supplies a photo of theirs
+  once per device. `pickBlank` explains what is wanted before the file
+  picker opens — "choose a file" with no explanation was not understood.
 
 ## Scope discipline — read this before proposing anything
 

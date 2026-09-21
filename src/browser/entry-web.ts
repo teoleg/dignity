@@ -47,13 +47,38 @@ class WebDriver {
   }
 }
 
-/** A plain file download. */
-const save = async (filename: string, data: Uint8Array) => {
+/**
+ * Hand the finished picture to the phone.
+ *
+ * The share sheet first: on a phone that is the route that offers "Save
+ * Image", which puts the form in the photo library where it can be printed
+ * and where each saved version stays visible. A plain download is the
+ * fallback for a desktop browser, and for a phone that declines to share the
+ * page always leaves the picture itself on screen to press and hold.
+ */
+const save = async (filename: string, data: Uint8Array, mime: string) => {
   // Copy into a plain ArrayBuffer: a Uint8Array over SharedArrayBuffer is
   // not a valid BlobPart.
   const bytes = new Uint8Array(data.byteLength);
   bytes.set(data);
-  const url = URL.createObjectURL(new Blob([bytes.buffer], { type: "application/pdf" }));
+  const blob = new Blob([bytes.buffer], { type: mime });
+
+  const file = new File([blob], filename, { type: mime });
+  const nav = navigator as Navigator & {
+    canShare?: (d: unknown) => boolean;
+    share?: (d: unknown) => Promise<void>;
+  };
+  if (nav.share && nav.canShare?.({ files: [file] })) {
+    try {
+      await nav.share({ files: [file] });
+      return;
+    } catch (e) {
+      // Dismissing the sheet is not a failure; fall through to the download.
+      if ((e as { name?: string }).name === "AbortError") return;
+    }
+  }
+
+  const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
   a.download = filename;
@@ -128,12 +153,46 @@ async function shrink(file: File, maxWidth = 1600): Promise<string> {
 /** Held for the session even when storage refuses it, so we ask at most once. */
 let blankInMemory = "";
 
+/**
+ * Ask whoever is holding the cemetery's blank order sheet for a photo of it.
+ *
+ * The blank is the vendor's own artwork and is deliberately not in this
+ * repository, so a deployment does not have one to ship. A bare file picker
+ * asks "choose a file" and says nothing about which file, so the card
+ * explains what is wanted and where it comes from before the picker opens.
+ * The answer is kept on this phone only, and only asked for once.
+ */
 function pickBlank(): Promise<string> {
   if (blankInMemory) return Promise.resolve(blankInMemory);
+  const note = document.getElementById("blanknote");
+  const pick = document.getElementById("blankpick");
+  const skip = document.getElementById("blankskip");
+  if (!note || !pick || !skip) return openPicker();
+
+  return new Promise<string>((resolve) => {
+    note.hidden = false;
+    const finish = (v: string | Promise<string>) => {
+      note.hidden = true;
+      pick.removeEventListener("click", onPick);
+      skip.removeEventListener("click", onSkip);
+      resolve(v as string);
+    };
+    const onPick = () => finish(openPicker());
+    const onSkip = () => finish("");
+    pick.addEventListener("click", onPick);
+    skip.addEventListener("click", onSkip);
+  });
+}
+
+/** The native file picker, resolving to "" if they back out of it. */
+function openPicker(): Promise<string> {
   return new Promise((resolve) => {
     const input = document.createElement("input");
     input.type = "file";
     input.accept = "image/*";
+    // Backing out fires `cancel` and no `change`; without this the promise
+    // would never settle and the form button would stay stuck.
+    input.addEventListener("cancel", () => resolve(""));
     input.addEventListener("change", () => {
       const file = input.files?.[0];
       if (!file) return resolve("");
