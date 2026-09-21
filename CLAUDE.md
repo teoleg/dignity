@@ -4,15 +4,21 @@ Guidance for AI assistants working in this repository.
 
 ---
 
-## Repository status: PLANNING. There is no code yet.
+## Repository status
 
-As of the last update to this file, this repository contains documentation
-only — no source, no build, no tests. **The stack is now decided** (ADR 0002)
-but nothing is scaffolded.
+**The deterministic core exists and is tested.** `src/lib/` holds the
+character table, the Hebrew date logic and the inscription composer, with 53
+passing tests. There is no application around it yet — no Next.js app, no
+database, no UI.
 
-**If you are an assistant reading this and the repository now contains code,
-this file is out of date. Re-derive it from the actual tree and rewrite it.**
-Everything below the "What we're building" section is intent, not fact.
+```
+npm test          # vitest, 53 tests
+npm run typecheck # tsc --noEmit, strict
+```
+
+Everything in `docs/decisions/` beyond ADR 0002 describes work not yet built.
+Treat the ADRs as intent; treat `src/` as fact, and update this file when
+that changes.
 
 ---
 
@@ -125,7 +131,32 @@ The short version of the hard parts:
 
 ---
 
-## Current state and what to do next
+## What is built
+
+| Module | Does |
+|---|---|
+| `src/lib/hebrew-text.ts` | NFC canonicalisation; strips niqqud, keeps the dagesh |
+| `src/lib/form-table.ts` | The 1–31 table, `encodeLine`/`decodeLine`, right-to-left layout |
+| `src/lib/hebrew-date.ts` | `@hebcal/core` wrapper; the sunset rule and unknown-time ambiguity |
+| `src/lib/inscription.ts` | Composes the standard lines; capacity and blockers |
+
+Design notes that are easy to undo by accident:
+
+- `encodeLine` returns a **discriminated union**, never throws and never
+  drops a character. Unrepresentable input comes back as a list so the family
+  can be told everything that failed at once.
+- `hebrewDateOfDeath(..., "unknown")` returns **both** candidate dates and
+  resolves nothing. Code that treats `ambiguous` as "use `ifDaytime`" has
+  reintroduced the bug the type exists to prevent.
+- **`stripNikud` is applied to hebcal output only.** hebcal renders months
+  pointed (`שְׁבָט`) and the form has no code for those marks. Text a *person*
+  supplied keeps its marks and is refused by the encoder instead — so a
+  family is told their spelling cannot be engraved rather than having it
+  silently altered.
+- `layOutRightToLeft` is the only place that knows about fill direction. The
+  encoder has no opinion about it and so cannot silently reverse anything.
+
+## What to do next
 
 The order form and a real proof have been read. The character table, fill
 direction, layout and house style are transcribed in
@@ -165,6 +196,9 @@ the images, and do not put real names or dates into committed files.
 
 ```
 CLAUDE.md               this file
+package.json            npm test · npm run typecheck
+src/lib/                the tested core — see "What is built"
+src/lib/__tests__/      53 tests
 docs/domain/
   hebrew-inscriptions.md  Hebrew, calendar, gematria, naming
   eagle-granite-form.md   the vendor form: code table, layout, house style
@@ -179,7 +213,8 @@ docs/open-questions.md  what we don't know yet
 samples/                LOCAL ONLY — gitignored, never committed
 ```
 
-No source layout yet — it follows from decisions not yet made.
+The application layer — Next.js routes, persistence, the form renderer — is
+not built yet. `src/lib/` has no framework dependencies and should keep none.
 
 ### Recording decisions
 
@@ -221,6 +256,7 @@ a profile without a new ADR — that reverses a deliberate privacy decision.
 
 - Development branch for this work: `claude/claude-md-docs-vecjqm`
 - No commit-message convention chosen yet.
+- `npm test` and `npm run typecheck` must both pass before a commit.
 
 ---
 

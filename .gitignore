@@ -4,6 +4,10 @@
 samples/*
 !samples/README.md
 
-# Scratch
+node_modules/
+dist/
+.next/
+coverage/
+
 .DS_Store
 *.tmp
