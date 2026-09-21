@@ -57,8 +57,13 @@ Intended shape of v1:
 2. The service composes the Hebrew inscription, including the Hebrew date.
 3. A live preview of the finished stone, updating as the user types.
 4. A chat assistant alongside it, for questions and adjustments.
-5. On approval, output the numeric encoding the form requires, plus a visual
-   proof of the final product.
+5. On approval, output **a completed copy of Eagle Granite's own order form**
+   — visually identical to the blank they issue, number boxes filled — plus a
+   visual proof of the finished stone.
+
+**The filled vendor form is the deliverable** (ADR 0001). Not a number list
+for someone to copy by hand: hand transcription is the error source we exist
+to remove. The form holds **5 rows × 28 boxes = 140 characters**.
 
 ### The thing that makes this project different
 
@@ -141,7 +146,8 @@ CLAUDE.md               this file
 docs/domain/
   hebrew-inscriptions.md  Hebrew, calendar, gematria, naming
   eagle-granite-form.md   the vendor form: code table, layout, house style
-docs/decisions/         architecture decision records (empty; see below)
+docs/decisions/         architecture decision records
+  0001-output-is-the-vendors-own-form.md
 docs/open-questions.md  what we don't know yet
 samples/                LOCAL ONLY — gitignored, never committed
 ```

@@ -140,8 +140,35 @@ backwards, because the failure is silent and symmetrical (see §4.2).
 Header fields: Customer · Eagle Granite Sales Rep · Family Name · Order Placed
 By · Date · Location · Address · Email · Phone.
 
-**To confirm:** exact box count per row (approximately 30), and whether the
-"Inscription" row is a shared line or one line among five.
+### Measured geometry — CONFIRMED
+
+Measured off the scan by gridline detection:
+
+| Property | Value |
+|---|---|
+| Rows of boxes | **5** |
+| Boxes per row | **28** |
+| Total capacity | **140 characters** |
+| Box pitch | uniform, 41.6 px at 1254 px page width (min 41, max 43) |
+| Row band height | ~48 px, consistent across all five rows |
+
+So each line holds **28 characters including spaces**, and the whole
+inscription holds 140. For scale, a typical death line such as an
+abbreviation + day + month + year runs around 16 characters, so a normal line
+fits comfortably — but a long name plus patronymic can approach the limit,
+and the tool must count and warn before the family writes anything.
+
+The pitch is uniform to within measurement noise, so box centers are
+computable from the row origin and pitch rather than needing per-box
+coordinates.
+
+**Caveat:** these are proportions from a working scan of unknown DPI, with
+slight skew and pencil marks. They are sound for box *counting* and relative
+layout. For print-accurate output we need a clean blank original — see
+`docs/open-questions.md` § A2.
+
+**Still to confirm:** whether the "Inscription" row is a shared/title line or
+simply the first of five equal lines.
 
 ---
 

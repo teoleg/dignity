@@ -34,8 +34,13 @@ Both are questions for the cemetery office or a rabbi, not for us.
 ### A2. Mechanics still unconfirmed
 - [ ] How is a **space** represented? There is no code for it. Leave the box
       empty, or something else? Affects every inscription.
-- [ ] Exact number of boxes per row (~30), and whether "Inscription" is a
-      shared line or simply the first of five.
+- [x] ~~Exact number of boxes per row~~ — **measured: 5 rows × 28 boxes =
+      140 characters.** Recorded in `eagle-granite-form.md` § 3.
+- [ ] Is "Inscription" a shared/title line, or simply the first of five
+      equal lines?
+- [ ] **A clean blank original of the form** (PDF, or a flat scan at known
+      DPI). Required for print-accurate output per ADR 0001 — the scan we
+      measured from is skewed and has pencil marks on it.
 - [ ] What happens when text exceeds one line — who decides the break?
 - [ ] Is line centering the engraver's job or the orderer's?
 
@@ -52,8 +57,9 @@ Both are questions for the cemetery office or a rabbi, not for us.
 - [ ] **Which of the two moments do we build first** — filling the form, or
       checking the returned proof? Checking is the smaller build and guards
       the last step before granite is cut.
-- [ ] Output format: a filled printable form matching the vendor's layout, or
-      a number sequence the family copies by hand into the paper form?
+- [x] ~~Output format~~ — **decided: a completed copy of Eagle Granite's own
+      form, visually identical, boxes filled.** See ADR 0001. Hand
+      transcription of numbers is explicitly ruled out.
 - [ ] Does the cemetery or Eagle Granite need to agree to this, or does it
       simply produce their existing form well enough that nothing changes on
       their side? (The second is far easier to ship.)
