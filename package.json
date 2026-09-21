@@ -8,9 +8,11 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.127.0",
     "@hebcal/core": "^5.4.11",
     "pdf-lib": "^1.17.1",
-    "sharp": "^0.35.4"
+    "sharp": "^0.35.4",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@types/node": "^26.6.2",

@@ -7,13 +7,13 @@ Guidance for AI assistants working in this repository.
 ## Repository status
 
 **The deterministic core exists and is tested.** `src/lib/` holds the
-character table, the Hebrew date logic, the inscription composer, and the
-form renderer, with 76 passing tests. It goes end to end: names and a
+character table, the Hebrew date logic, the inscription composer, the form
+renderer and the translation vetting, with 96 passing tests. It goes end to end: names and a
 Gregorian date in, a filled PDF of the vendor's own form out. There is no
 application around it yet — no Next.js app, no database, no UI.
 
 ```
-npm test          # vitest, 76 tests
+npm test          # vitest, 96 tests
 npm run typecheck # tsc --noEmit, strict
 npx tsx scripts/render-sample.ts <blank-image> out.pdf
 ```
@@ -143,6 +143,8 @@ The short version of the hard parts:
 | `src/lib/inscription.ts` | Composes the standard lines; capacity and blockers |
 | `src/lib/form-grid.ts` | Detects the 5×28 box grid on a blank; refuses anything else |
 | `src/lib/form-render.ts` | Draws the numbers onto the vendor's blank, out as PDF |
+| `src/lib/translation.ts` | Vets model output; independent back-translation (ADR 0006) |
+| `src/lib/translation-claude.ts` | Claude adapter — **not yet run against the live API** |
 
 Design notes that are easy to undo by accident:
 
@@ -168,6 +170,14 @@ Design notes that are easy to undo by accident:
   revised form is a new asset rather than a code change.
 - `prepareBlank`'s scan cleaning only touches pixels that are light *and*
   unsaturated, so it cannot erase a rule the detector needs.
+- **Translation output is never repaired, only rejected** (ADR 0006). No
+  stripping marks, no truncating to fit. A silently corrected inscription is
+  the failure the project exists to prevent.
+- **`backTranslate` must never see the original request.** A gloss from the
+  pass that wrote the Hebrew restates the intent instead of checking it. The
+  isolation *is* the verification.
+- `possibleDrift` is a hint, not a verdict. Never present it as a correctness
+  judgement.
 
 ## What to do next
 
@@ -211,7 +221,7 @@ the images, and do not put real names or dates into committed files.
 CLAUDE.md               this file
 package.json            npm test · npm run typecheck
 src/lib/                the tested core — see "What is built"
-src/lib/__tests__/      76 tests
+src/lib/__tests__/      96 tests
 scripts/render-sample.ts  dev utility: fill a blank and write a PDF
 docs/domain/
   hebrew-inscriptions.md  Hebrew, calendar, gematria, naming
@@ -223,6 +233,7 @@ docs/decisions/         architecture decision records
   0003-access-and-retention.md
   0004-render-by-overlaying-the-vendor-blank.md
   0005-english-first-chat-led-interface.md
+  0006-translation-propose-vet-decide.md
 docs/open-questions.md  what we don't know yet
 samples/                LOCAL ONLY — gitignored, never committed
 ```
