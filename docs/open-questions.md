@@ -87,15 +87,22 @@ Both are questions for the cemetery office or a rabbi, not for us.
 
 ---
 
-## E. Technical decisions — deliberately unmade
+## E. Technical decisions
 
-Recorded as ADRs in `docs/decisions/` when decided.
+Recorded as ADRs in `docs/decisions/`.
 
-- [ ] Language and runtime
-- [ ] Web framework and rendering approach
-- [ ] Persistence — whether any is needed for v1
+- [x] ~~Language and runtime~~ — TypeScript, Next.js. ADR 0002.
+- [x] ~~Web framework~~ — Next.js, UI and server in one deployable. ADR 0002.
+- [x] ~~Persistence~~ — PostgreSQL on RDS, for constraint enforcement.
+      ADR 0002; schema in `docs/data-model.md`.
+- [x] ~~Accounts and access~~ — none; magic link, bounded retention. ADR 0003.
+- [ ] Retention window numbers — 90 days post-approval / 12 month cap are
+      placeholders. Revisit against real vendor turnaround.
+- [ ] **Request SES production access early.** Sandbox mode only sends to
+      verified addresses, so magic links will not work for real families
+      until this is granted. Will block launch if left late.
 - [ ] Hebrew typeface for preview. The proof names `HEBREW TDS`; we will not
       have it, so preview fidelity is approximate. Decide how close is close
       enough, and license whatever we do use.
 - [ ] PDF generation for the printable form
-- [ ] Hosting
+- [x] ~~Hosting~~ — AWS App Runner. ADR 0002.

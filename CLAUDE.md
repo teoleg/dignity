@@ -7,7 +7,8 @@ Guidance for AI assistants working in this repository.
 ## Repository status: PLANNING. There is no code yet.
 
 As of the last update to this file, this repository contains documentation
-only — no source, no build, no tests, no chosen language.
+only — no source, no build, no tests. **The stack is now decided** (ADR 0002)
+but nothing is scaffolded.
 
 **If you are an assistant reading this and the repository now contains code,
 this file is out of date. Re-derive it from the actual tree and rewrite it.**
@@ -146,8 +147,11 @@ CLAUDE.md               this file
 docs/domain/
   hebrew-inscriptions.md  Hebrew, calendar, gematria, naming
   eagle-granite-form.md   the vendor form: code table, layout, house style
+docs/data-model.md      Postgres schema sketch and its invariants
 docs/decisions/         architecture decision records
   0001-output-is-the-vendors-own-form.md
+  0002-stack-and-platform.md
+  0003-access-and-retention.md
 docs/open-questions.md  what we don't know yet
 samples/                LOCAL ONLY — gitignored, never committed
 ```
@@ -179,6 +183,16 @@ into stone, unmarked guesses are the main hazard.
 - Example and test dates are **synthetic**. `13 Jan 2024` and `25 Jan 2024`
   are the house examples — the second exercises the ט״ו/ט״ז trap and the
   sunset shift at once. Never reach for a real order to make a point.
+
+### Stack (ADR 0002)
+
+TypeScript end to end — Next.js, `@hebcal/core`, PostgreSQL on RDS, S3,
+SES, App Runner. Postgres is chosen for constraint enforcement, not
+scale: invariants belong in the schema (see `docs/data-model.md`).
+
+**No user accounts** (ADR 0003). Families reach their order by emailed magic
+link; records expire and are purged. Do not add a staff console, a login, or
+a profile without a new ADR — that reverses a deliberate privacy decision.
 
 ### Git
 
