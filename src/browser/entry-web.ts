@@ -95,15 +95,41 @@ async function findBlank(): Promise<string> {
   } catch {
     /* not deployed with one */
   }
+  if (blankInMemory) return blankInMemory;
   try {
-    return localStorage.getItem(BLANK_KEY) ?? "";
+    blankInMemory = localStorage.getItem(BLANK_KEY) ?? "";
+    return blankInMemory;
   } catch {
     return "";
   }
 }
 
-/** Ask the viewer for the blank, and remember it on this device. */
+/**
+ * Shrink a picked image before it is used or stored.
+ *
+ * A photo straight from a phone camera is several megabytes. Stored as a
+ * data URI that overflows the browser's quota, so the save fails silently and
+ * the viewer is asked for the form again every single time — and the same
+ * bytes get embedded in every PDF. The form is a line drawing: 1600px across
+ * is more than the grid detector needs.
+ */
+async function shrink(file: File, maxWidth = 1600): Promise<string> {
+  const bitmap = await createImageBitmap(file);
+  const scale = Math.min(1, maxWidth / bitmap.width);
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(bitmap.width * scale);
+  canvas.height = Math.round(bitmap.height * scale);
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("canvas unavailable");
+  ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  return canvas.toDataURL("image/jpeg", 0.85);
+}
+
+/** Held for the session even when storage refuses it, so we ask at most once. */
+let blankInMemory = "";
+
 function pickBlank(): Promise<string> {
+  if (blankInMemory) return Promise.resolve(blankInMemory);
   return new Promise((resolve) => {
     const input = document.createElement("input");
     input.type = "file";
@@ -111,20 +137,18 @@ function pickBlank(): Promise<string> {
     input.addEventListener("change", () => {
       const file = input.files?.[0];
       if (!file) return resolve("");
-      const reader = new FileReader();
-      reader.onload = () => {
-        const uri = String(reader.result ?? "");
-        try {
-          localStorage.setItem(BLANK_KEY, uri);
-        } catch {
-          /* too large for storage: still usable this session */
-        }
-        resolve(uri);
-      };
-      reader.onerror = () => resolve("");
-      reader.readAsDataURL(file);
+      void shrink(file)
+        .then((uri) => {
+          blankInMemory = uri;
+          try {
+            localStorage.setItem(BLANK_KEY, uri);
+          } catch {
+            /* over quota: the session copy still serves */
+          }
+          resolve(uri);
+        })
+        .catch(() => resolve(""));
     });
-    // Cancel leaves no event on some browsers; the viewer can press again.
     input.click();
   });
 }

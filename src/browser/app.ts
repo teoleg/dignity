@@ -387,9 +387,19 @@ function boxesOf(s: string): Box[] {
 
 /* ------------------------------------------------------------ download */
 
+/** The last PDF built, so tapping again does not rebuild or re-ask. */
+let builtFor = "";
+let builtPdf: Uint8Array | null = null;
+
 async function download(which: "dl" | "chatdl" = "dl") {
   const btn = document.getElementById(which) as HTMLButtonElement | null;
   if (!btn) return;
+  const label = btn.textContent ?? "Download the filled form (PDF)";
+  /** Whatever happens, the viewer must be left able to try again. */
+  const restore = (text?: string) => {
+    btn.disabled = false;
+    btn.textContent = text ?? label;
+  };
   btn.disabled = true;
   btn.textContent = "Building the form…";
   try {
@@ -398,22 +408,25 @@ async function download(which: "dl" | "chatdl" = "dl") {
       blankSource = await askForBlank();
     }
     if (!blankSource) {
-      btn.textContent = "Add the blank order form to continue";
-      setTimeout(() => render(), 3000);
+      // Cancelled the picker. Do not strand the button.
+      restore("Pick the blank form to continue");
+      setTimeout(() => restore(), 3000);
       return;
     }
     if (!saveFile) throw new Error("saving unavailable");
-    const out = await renderForm(blankSource, lines.map((l) => l.boxes), { cleanScan: true });
-    await saveFile("monument-order-form.pdf", out.pdf);
-    btn.textContent = "Downloaded";
-    return;
+    // Rebuild only when the inscription itself changed.
+    const key = lines.map((l) => l.hebrew).join("|");
+    if (builtFor !== key || !builtPdf) {
+      const out = await renderForm(blankSource, lines.map((l) => l.boxes), { cleanScan: true });
+      builtPdf = out.pdf;
+      builtFor = key;
+    }
+    await saveFile("monument-order-form.pdf", builtPdf);
+    restore("Downloaded — tap to save again");
   } catch (e) {
-    btn.textContent = "Could not build the form";
+    restore("Could not build the form — tap to retry");
     // eslint-disable-next-line no-console
     console.error(e);
-  } finally {
-    if (which === "dl") setTimeout(() => render(), 2500);
-    else setTimeout(() => { btn.disabled = false; btn.textContent = "Download the filled form (PDF)"; }, 2500);
   }
 }
 
