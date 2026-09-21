@@ -68,8 +68,10 @@ Hebrew output is guessed.
 - [ ] Does the cemetery or Eagle Granite need to agree to this, or does it
       simply produce their existing form well enough that nothing changes on
       their side? (The second is far easier to ship.)
-- [ ] Multiple decedents on one monument — the observed proof had two. Is that
-      one form or two?
+- [ ] **One form per person?** Both single and double monuments occur. The
+      line math (4 mandatory lines per person against a 5-line form) implies
+      one form each, so a double stone means two. Consistent with the
+      observed proof. Needs confirming with the cemetery.
 - [ ] Does a record need to persist and be reopened, or is each session
       one-shot?
 
