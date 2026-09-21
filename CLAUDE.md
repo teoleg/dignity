@@ -105,9 +105,10 @@ The short version of the hard parts:
 - **The form has no space, no nikud and no Yiddish diacritics.** Some names
   genuinely cannot be expressed on it. Say so plainly; never substitute
   silently.
-- **`פ״נ` and `נ״פ` are the same two characters reversed.** A transposition
-  still looks like Hebrew. Always render the numbers back into Hebrew and
-  show the user, so the error is visible instead of hidden in digits.
+- **`פ״נ` ("here lies buried") and `נ״פ` ("died") are the same two characters
+  reversed, and both appear on one stone.** A transposition therefore
+  produces *valid* Hebrew and is catchable only by position. Validate
+  structurally, and always render the numbers back into Hebrew for the user.
 - **Canonical Unicode Hebrew is the source of truth**; the numeric code is a
   render target produced by a pure, table-driven, round-trip-tested function.
 - **Gender is one field per record**, and every derived string reads from it.
@@ -120,11 +121,15 @@ The order form and a real proof have been read. The character table, fill
 direction, layout and house style are transcribed in
 `docs/domain/eagle-granite-form.md`. **The encoder is now unblocked.**
 
-Two style questions are *not* settled and are blocking faithful output —
-whether `נ״פ` on the death line is correct or a reversal, and whether the
-non-standard `ת'נ'צ'ב'ה'` is house style. Both need the cemetery or a rabbi.
-See `docs/open-questions.md` § A1. Do not reproduce either until answered;
-codifying an error would put it on every future stone.
+**All inscription style questions are resolved.** `פ״נ` ("here lies buried"),
+`נ״פ` ("died") and both closing-formula variants are confirmed, and the
+English back-translation template is complete — see
+`docs/domain/eagle-granite-form.md` §4.1. Nothing about the Hebrew output is
+guessed any more.
+
+What remains before a family could sign a real stone is not Hebrew: a clean
+blank form for print accuracy, and the mechanical unknowns in
+`docs/open-questions.md` § A2 (chiefly how a space is represented).
 
 `docs/open-questions.md` is the live list of what we don't know. **Read it
 before proposing implementation work**, and keep it current.

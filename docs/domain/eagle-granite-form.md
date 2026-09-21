@@ -234,15 +234,33 @@ no longer provisional:
 | `פ״נ` | Here lies buried |
 | `[name] בן / בת [father's name]` | [name], son / daughter of [father] |
 | `נ״פ [day] [month] [year]` | Died [day] [month] [year] |
-| closing formula | *(pending — see below)* |
+| `תנצב״ה` or `ת׳נ׳צ׳ב׳ה׳` | May their soul be bound up in the bond of life |
 
-This template is the back-translation feature. A family who reads no Hebrew
-sees exactly this beside the inscription before they approve anything.
+(The closing formula expands to `תהא נפשו/נפשה צרורה בצרור החיים`, from
+1 Samuel 25:29. Written identically for either gender, like the other two
+abbreviations.)
 
-**STILL OPEN — the closing formula.** The observed proof rendered it
-`ת'נ'צ'ב'ה'`, a geresh after every letter, rather than the classical
-`תנצב״ה`. Not covered by the reference inscription. Still needs an answer
-before we reproduce it.
+This template is the back-translation feature, and it is now **complete**. A
+family who reads no Hebrew sees exactly this beside the inscription before
+they approve anything. Every line of it is confirmed, not inferred.
+
+**RESOLVED — the closing formula. Both variants are acceptable.** Confirmed
+by the project owner.
+
+| Variant | Written | Boxes | Codes |
+|---|---|---|---|
+| Classical (**default**) | `תנצב״ה` | 6 | `29 18 24 4 31 7` |
+| Spaced | `ת׳נ׳צ׳ב׳ה׳` | 10 | `29 30 18 30 24 30 4 30 7 30` |
+
+Both encode and round-trip cleanly, and both fit the 28-box line easily.
+
+**Default is the classical `תנצב״ה`** — it is the conventional form and the
+one most families and rabbis will expect. The spaced variant, which the
+observed proof used, is offered as a per-order choice rather than the
+default. This is a **style preference, not a correctness question**: neither
+is wrong, so the choice belongs to the family, with a sensible default.
+
+Schema consequence: `order.closing_style`. See `docs/data-model.md`.
 
 ### 4.2 Mirror-image abbreviations — a structural hazard
 

@@ -22,16 +22,18 @@ Headlines:
 
 ## A. Blocking — needs the cemetery, the vendor, or a rabbi
 
-### A1. The two style anomalies on the proof
+### A1. Inscription style — RESOLVED
 - [x] ~~Is `נ״פ` a transposition of `פ״נ`?~~ **No — confirmed correct house
       style** against a known-good reference. Reproduce it.
 - [x] ~~What does `נ״פ` expand to?~~ **"died"** (`נפטר`/`נפטרה`) — confirmed.
       The back-translation template is settled apart from the closing
       formula; see `eagle-granite-form.md` §4.1.
-- [ ] Is `ת'נ'צ'ב'ה'` (geresh after each letter) house style, or an artifact
-      of the encoding? Classical form is `תנצב״ה`.
+- [x] ~~Is `ת׳נ׳צ׳ב׳ה׳` house style or an artifact?~~ **Both variants are
+      acceptable.** Classical `תנצב״ה` is the default; the spaced form is a
+      per-order option. See `eagle-granite-form.md` §4.1.
 
-Both are questions for the cemetery office or a rabbi, not for us.
+**All inscription style questions are now resolved.** Nothing about the
+Hebrew output is guessed.
 
 ### A2. Mechanics still unconfirmed
 - [ ] How is a **space** represented? There is no code for it. Leave the box

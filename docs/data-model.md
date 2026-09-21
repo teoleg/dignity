@@ -13,6 +13,7 @@ order
   status            enum('draft','submitted','proof_received','approved')
   form_revision     text not null      -- which vendor form this targets
   contact_email     citext not null    -- the only contact data we hold
+  closing_style     enum('classical','spaced') not null default 'classical'
   created_at        timestamptz not null
   expires_at        timestamptz not null
 
@@ -74,6 +75,11 @@ constraint or trigger, not in application code:
 ```sql
 -- an approved order may not contain an unresolved Hebrew date
 ```
+
+**3a. `closing_style`** selects between `תנצב״ה` (default) and `ת׳נ׳צ׳ב׳ה׳`.
+Both are acceptable — a family preference, not a correctness flag. It lives
+on the order rather than per-decedent because a shared monument carries one
+closing line.
 
 **4. 28 is the form's line capacity**, measured — see
 `domain/eagle-granite-form.md` §3. The check constraint means an
