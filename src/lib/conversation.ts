@@ -240,18 +240,28 @@ function vet(hebrew: string): string | null {
  * that has a right answer. Returns empty lines until there is enough.
  */
 export function derive(d: Draft): Derived {
-  const ready =
-    d.gender && d.hebrewGiven && d.hebrewFather && d.englishGiven && d.englishFather && d.diedOn;
-  if (!ready) {
-    return { lines: [], capacity: capacity([]), blockers: ["The inscription is not complete yet."] };
+  // Only what the *Hebrew* needs. The English names are the family-facing
+  // gloss — they are never engraved — so a missing one must not block the
+  // form. It used to, and an order could stall with every question answered
+  // and nothing on screen saying why.
+  const missing = [
+    !d.hebrewGiven && "the name of the person who died",
+    !d.gender && "whether that person was a man or a woman",
+    !d.hebrewFather && "the father's first name",
+    !d.diedOn && "the date of death",
+  ].filter((x): x is string => typeof x === "string");
+  if (missing.length > 0) {
+    return { lines: [], capacity: capacity([]), blockers: [`Still needed: ${missing.join(", ")}.`] };
   }
   const [y, m, day] = d.diedOn!.split("-").map(Number) as [number, number, number];
   const decedent: Decedent = {
     gender: d.gender!,
     hebrewGiven: d.hebrewGiven!,
     hebrewFather: d.hebrewFather!,
-    englishGiven: d.englishGiven!,
-    englishFather: d.englishFather!,
+    // How the family knows the name: their own English if we have it, else
+    // how the Hebrew sounds. Never blank, never invented.
+    englishGiven: d.englishGiven ?? d.hebrewGivenSaid ?? d.hebrewGiven!,
+    englishFather: d.englishFather ?? d.hebrewFatherSaid ?? d.hebrewFather!,
     // The model never supplies this. It is computed.
     death: hebrewDateOfDeath(new Date(y, m - 1, day), d.timeOfDeath ?? "unknown"),
   };

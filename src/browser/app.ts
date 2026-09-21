@@ -258,8 +258,19 @@ function offerNext() {
     const pick = (t: "daytime" | "after-sunset" | "unknown", said: string) => {
       draft = { ...draft, timeOfDeath: t };
       recompute();
-      settle(said);
-      if (t === "unknown") asked.sunset = "";
+      if (t === "unknown") {
+        // An unknown time leaves the Hebrew date genuinely ambiguous, so it
+        // keeps blocking — but asking again every turn is nagging. Leave the
+        // buttons up instead, for whenever someone in the family knows.
+        const hint = el.querySelector(".bubble")?.querySelector("p.hint");
+        if (hint) {
+          hint.textContent =
+            "Recorded as unknown. The date cannot be finished until someone knows — " +
+            "press a button above if you find out.";
+        }
+      } else {
+        settle(said);
+      }
       render();
       void send(said, false);
     };

@@ -129,6 +129,35 @@ describe("when the inscription is finished", () => {
     expect(blockers).toHaveLength(1);
   });
 
+  it("says which piece is missing, not just that something is", () => {
+    const d = { ...complete };
+    delete d.hebrewFather;
+    expect(derive(d).blockers[0]).toContain("father's first name");
+  });
+
+  // The English names are the family's gloss and are never engraved. An
+  // order once stalled with every question answered because the model had
+  // recorded the Hebrew for the father but not the English.
+  it("still composes when only the English names are missing", () => {
+    const d: Draft = { ...complete };
+    delete d.englishGiven;
+    delete d.englishFather;
+    const { lines, blockers } = derive(d);
+    expect(blockers).toHaveLength(0);
+    expect(lines[1]?.hebrew).toBe("שרה בת אברהם");
+  });
+
+  it("glosses a missing English name with how the Hebrew sounds", () => {
+    const d: Draft = {
+      ...complete,
+      hebrewGivenSaid: "sa-RAH",
+      hebrewFatherSaid: "av-ra-HAM",
+    };
+    delete d.englishGiven;
+    delete d.englishFather;
+    expect(derive(d).lines[1]?.english).toBe("sa-RAH, daughter of av-ra-HAM");
+  });
+
   it("reports the one free line, and none once it is used", () => {
     expect(derive(complete).capacity.linesFree).toBe(1);
     const withExtra = derive({
