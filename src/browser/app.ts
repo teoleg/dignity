@@ -56,6 +56,8 @@ let busy = false;
 let saveFile: Saver | null = null;
 let blankSource = "";
 let askForBlank: (() => Promise<string>) | null = null;
+/** What Hebrew the conversation has already shown, so a card appears once. */
+const shown = { given: "", father: "", extra: "" };
 
 /* ---------------------------------------------------------------- chat */
 
@@ -116,11 +118,73 @@ function apply(turn: Turn) {
   history.push({ role: "assistant", content: turn.reply });
 
   let html = `<p>${esc(turn.reply).replace(/\n/g, "</p><p>")}</p>`;
+
+  // Show the Hebrew where it is being discussed. The model is told to keep
+  // Hebrew out of its prose (it cannot be trusted to get a date right in
+  // letters), so without this the conversation talks about a spelling the
+  // reader never sees — and the stone above is far too small to read.
+  if (draft.hebrewGiven && draft.hebrewGiven !== shown.given) {
+    shown.given = draft.hebrewGiven;
+    const full = draft.hebrewFather
+      ? `${draft.hebrewGiven} ${draft.gender === "female" ? "בת" : "בן"} ${draft.hebrewFather}`
+      : draft.hebrewGiven;
+    const said = [draft.hebrewGivenSaid, draft.hebrewFather ? (draft.gender === "female" ? "bat" : "ben") : "", draft.hebrewFatherSaid]
+      .filter(Boolean).join(" ");
+    html += card(full, said);
+    shown.father = draft.hebrewFather ?? "";
+  } else if (draft.hebrewFather && draft.hebrewFather !== shown.father) {
+    shown.father = draft.hebrewFather;
+    html += card(draft.hebrewFather, draft.hebrewFatherSaid ?? "");
+  }
+  if (draft.extra && draft.extra.hebrew !== shown.extra) {
+    shown.extra = draft.extra.hebrew;
+    html += card(draft.extra.hebrew, draft.extra.pronunciation, draft.extra.english);
+  }
+
   for (const r of turn.rejected) {
     html += `<p class="err">I could not use “${esc(r.hebrew)}” — ${esc(r.reason)}.</p>`;
   }
   bubble("d", html);
   render();
+  offerForm();
+}
+
+/**
+ * Surface the finished form in the conversation.
+ *
+ * It used to live only at the bottom of the "Check lines" sheet, which meant
+ * the app's actual output was two taps and a scroll away and people finished
+ * the dialogue without ever finding it.
+ */
+let offered = false;
+function offerForm() {
+  if (blockers.length > 0) {
+    offered = false;
+    return;
+  }
+  if (offered) return;
+  offered = true;
+  const el = bubble(
+    "d",
+    `<p><strong>That is everything.</strong> Read the lines once more, then take the form to the cemetery office.</p>
+     <button class="btn wide" id="chatdl" type="button">Download the filled order form</button>
+     <button class="btn wide ghost" id="chatcheck" type="button" style="margin-top:8px">Check every line first</button>`,
+  );
+  el.querySelector("#chatdl")?.addEventListener("click", () => void download("chatdl"));
+  el.querySelector("#chatcheck")?.addEventListener("click", () => {
+    $("sheet-checks").hidden = false;
+  });
+}
+
+/** The Hebrew, how it sounds, and what it means — the three-part check. */
+function card(hebrew: string, said: string, means?: string): string {
+  const boxes = boxesOf(hebrew).length;
+  return `<div class="prop">
+    <span class="heb">${esc(hebrew)}</span>
+    ${said ? `<div class="say">Sounds like: <strong>${esc(said)}</strong></div>` : ""}
+    ${means ? `<div class="means">Means: ${esc(means)}</div>` : ""}
+    <div class="propcount">${boxes} of ${BOXES_PER_LINE} boxes</div>
+  </div>`;
 }
 
 const setInput = (on: boolean) => {
@@ -202,7 +266,7 @@ function render() {
     <button class="btn wide" id="dl" ${ready ? "" : "disabled"}>${ready ? "Download the filled form" : "Not ready yet"}</button>`;
 
   const dl = document.getElementById("dl");
-  if (dl && ready) dl.addEventListener("click", download);
+  if (dl && ready) dl.addEventListener("click", () => void download("dl"));
 
   $("ck-blockers").textContent = ready ? "Ready" : `${blockers.length} to resolve`;
   $("ck-blockers").className = "ck " + (ready ? "done" : lines.length ? "open" : "");
@@ -216,8 +280,9 @@ function boxesOf(s: string): Box[] {
 
 /* ------------------------------------------------------------ download */
 
-async function download() {
-  const btn = document.getElementById("dl") as HTMLButtonElement;
+async function download(which: "dl" | "chatdl" = "dl") {
+  const btn = document.getElementById(which) as HTMLButtonElement | null;
+  if (!btn) return;
   btn.disabled = true;
   btn.textContent = "Building the form…";
   try {
@@ -234,12 +299,14 @@ async function download() {
     const out = await renderForm(blankSource, lines.map((l) => l.boxes), { cleanScan: true });
     await saveFile("monument-order-form.pdf", out.pdf);
     btn.textContent = "Downloaded";
+    return;
   } catch (e) {
     btn.textContent = "Could not build the form";
     // eslint-disable-next-line no-console
     console.error(e);
   } finally {
-    setTimeout(() => render(), 2500);
+    if (which === "dl") setTimeout(() => render(), 2500);
+    else setTimeout(() => { btn.disabled = false; btn.textContent = "Download the filled order form"; }, 2500);
   }
 }
 
