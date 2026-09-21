@@ -87,8 +87,9 @@ alef. Any assumption of a letter/value relationship is wrong.
 
 ### 2.1 What the table does NOT contain — important
 
-- **No space.** There is no code for a word break. Working hypothesis: you
-  leave a box empty. **Must be confirmed** — it affects every inscription.
+- **No space code — a space is an empty box. CONFIRMED** by the project
+  owner. The encoder emits a gap rather than a code, and the renderer leaves
+  that box blank.
 - **No Yiddish diacritics whatsoever**: no אַ, אָ, בֿ, פֿ, ױ, ײ, ײַ.
 - **No nikud** (vowel points) beyond the two dagesh forms.
 - **No shin/sin dot** — ש only, no שׁ / שׂ.

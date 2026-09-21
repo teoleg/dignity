@@ -36,15 +36,16 @@ Headlines:
 Hebrew output is guessed.
 
 ### A2. Mechanics still unconfirmed
-- [ ] How is a **space** represented? There is no code for it. Leave the box
-      empty, or something else? Affects every inscription.
+- [x] ~~How is a space represented?~~ **An empty box** — confirmed.
 - [x] ~~Exact number of boxes per row~~ — **measured: 5 rows × 28 boxes =
       140 characters.** Recorded in `eagle-granite-form.md` § 3.
 - [ ] Is "Inscription" a shared/title line, or simply the first of five
       equal lines?
-- [ ] **A clean blank original of the form** (PDF, or a flat scan at known
-      DPI). Required for print-accurate output per ADR 0001 — the scan we
-      measured from is skewed and has pencil marks on it.
+- [ ] **A clean blank original of the form**, ideally a PDF. Per ADR 0004
+      the blank *is* the template — output quality is capped by its quality.
+      The prototype works from a scan of a used form, cleaned up
+      automatically; a vector original would print perfectly at any size.
+      Not blocking, but the single highest-value artifact still missing.
 - [ ] What happens when text exceeds one line — who decides the break?
 - [ ] Is line centering the engraver's job or the orderer's?
 

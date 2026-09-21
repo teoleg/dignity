@@ -102,9 +102,13 @@ The short version of the hard parts:
 - **The number-per-letter code is a glyph index, not gematria** — confirmed:
   code 1 is תּ, not א. The full 1–31 table is decoded in
   `docs/domain/eagle-granite-form.md`. Never infer a letter/value relation.
-- **The form has no space, no nikud and no Yiddish diacritics.** Some names
-  genuinely cannot be expressed on it. Say so plainly; never substitute
-  silently.
+- **The form has no nikud and no Yiddish diacritics.** Some names genuinely
+  cannot be expressed on it. Say so plainly; never substitute silently.
+  There is no space code either — **a space is simply an empty box.**
+- **Never redraw the vendor's form** (ADR 0004). Overlay numbers onto their
+  blank. Detect the box grid from the image and fail loudly unless exactly
+  5 rows of 28 are found — a mis-detected grid puts every number in the
+  wrong box, silently.
 - **`פ״נ` ("here lies buried") and `נ״פ` ("died") are the same two characters
   reversed, and both appear on one stone.** A transposition therefore
   produces *valid* Hebrew and is catchable only by position. Validate
@@ -127,9 +131,15 @@ English back-translation template is complete — see
 `docs/domain/eagle-granite-form.md` §4.1. Nothing about the Hebrew output is
 guessed any more.
 
-What remains before a family could sign a real stone is not Hebrew: a clean
-blank form for print accuracy, and the mechanical unknowns in
-`docs/open-questions.md` § A2 (chiefly how a space is represented).
+The mechanical questions are answered too: a space is an empty box, and the
+form holds 5 rows × 28 boxes. **Rendering is settled by ADR 0004** — the
+vendor's blank is the template and the generator draws nothing but the
+numbers on top of it. A redraw was prototyped and rejected: it was
+recognisably not their form.
+
+What remains is a clean blank original from Eagle Granite. Not blocking —
+the prototype cleans up a scan automatically — but output quality is capped
+by the blank's quality, so it is the highest-value artifact still missing.
 
 `docs/open-questions.md` is the live list of what we don't know. **Read it
 before proposing implementation work**, and keep it current.
@@ -157,6 +167,7 @@ docs/decisions/         architecture decision records
   0001-output-is-the-vendors-own-form.md
   0002-stack-and-platform.md
   0003-access-and-retention.md
+  0004-render-by-overlaying-the-vendor-blank.md
 docs/open-questions.md  what we don't know yet
 samples/                LOCAL ONLY — gitignored, never committed
 ```
