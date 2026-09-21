@@ -80,9 +80,9 @@ function bubble(who: "you" | "d", html: string): HTMLElement {
   return el;
 }
 
-async function send(text: string) {
+async function send(text: string, showBubble = true) {
   if (busy) return;
-  bubble("you", `<p>${esc(text)}</p>`);
+  if (showBubble) bubble("you", `<p>${esc(text)}</p>`);
   history.push({ role: "user", content: text });
   busy = true;
   setInput(false);
@@ -123,6 +123,12 @@ function copyFor(code: string): string {
 
 function apply(turn: Turn) {
   draft = turn.draft;
+  // The family's answer outranks the model's guess about it.
+  if (confirmedSpelling && draft.hebrewGiven === confirmedSpelling && !draft.nameConfirmed) {
+    draft = { ...draft, nameConfirmed: true };
+    const d = derive(draft);
+    turn = { ...turn, lines: d.lines, blockers: d.blockers };
+  }
   lines = turn.lines;
   blockers = turn.blockers;
   history.push({ role: "assistant", content: turn.reply });
@@ -170,6 +176,23 @@ function apply(turn: Turn) {
  */
 let asked = { confirm: "", sunset: "", offered: false };
 
+/**
+ * A spelling the family has confirmed with the button.
+ *
+ * The model is asked to record the confirmation too, but it is not allowed to
+ * take it back: an unnecessary `false` from a turn would silently re-block the
+ * order with no way out, which is the bug this whole flow exists to fix. A
+ * changed spelling clears it — `applyTurn` already re-arms confirmation then.
+ */
+let confirmedSpelling = "";
+
+/** Re-derive the inscription after the page itself changes the draft. */
+function recompute() {
+  const d = derive(draft);
+  lines = d.lines;
+  blockers = d.blockers;
+}
+
 function offerNext() {
   // The family confirms the spelling by ear. That is a decision they make,
   // so it is a button, not something inferred from what they typed.
@@ -186,24 +209,23 @@ function offerNext() {
       if (box) box.innerHTML = `<p class="hint">${text}</p>`;
     };
     el.querySelector("#nameok")?.addEventListener("click", () => {
+      confirmedSpelling = draft.hebrewGiven ?? "";
       draft = { ...draft, nameConfirmed: true };
-      const d = derive(draft);
-      lines = d.lines;
-      blockers = d.blockers;
+      recompute();
       settle("Confirmed.");
-      history.push({ role: "user", content: "Yes, that spelling is right." });
       render();
-      offerNext();
+      // Tell the model too, or the conversation stops here and the family has
+      // to prod it to get the next question.
+      void send("Yes, that spelling is right.", false);
     });
     el.querySelector("#namebad")?.addEventListener("click", () => {
+      confirmedSpelling = "";
       draft = { ...draft, nameConfirmed: false };
-      const d2 = derive(draft);
-      lines = d2.lines;
-      blockers = d2.blockers;
-      settle("Not confirmed — tell me how it should sound.");
-      history.push({ role: "user", content: "No, that spelling is wrong." });
+      recompute();
+      settle("Not right — I will ask again.");
       asked.confirm = "";
       render();
+      void send("No, that spelling is not how the name was said.", false);
     });
     return;
   }
@@ -228,14 +250,11 @@ function offerNext() {
     };
     const pick = (t: "daytime" | "after-sunset" | "unknown", said: string) => {
       draft = { ...draft, timeOfDeath: t };
-      const d = derive(draft);
-      lines = d.lines;
-      blockers = d.blockers;
+      recompute();
       settle(said);
-      history.push({ role: "user", content: said });
-      render();
       if (t === "unknown") asked.sunset = "";
-      else offerNext();
+      render();
+      void send(said, false);
     };
     el.querySelector("#tday")?.addEventListener("click", () => pick("daytime", "During the day."));
     el.querySelector("#teve")?.addEventListener("click", () => pick("after-sunset", "In the evening."));
