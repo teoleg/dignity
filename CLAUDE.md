@@ -117,9 +117,11 @@ The short version of the hard parts:
   render target produced by a pure, table-driven, round-trip-tested function.
 - **Gender is one field per record**, and every derived string reads from it.
 - **The user does not read Hebrew** (ADR 0005). Never show Hebrew alone —
-  always with how it sounds and what it means. The pronunciation is the
-  verification mechanism, and it must be re-transliterated per interface
-  language.
+  always with how it sounds and what it means.
+- **The core function is English → Hebrew translation, not template-filling.**
+  The family says what they want; the app produces the Hebrew. The standard
+  four lines are a starting point, not the output shape — the form holds 140
+  characters and the spare room is for the family's own words.
 
 ---
 

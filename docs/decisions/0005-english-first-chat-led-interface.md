@@ -14,6 +14,33 @@ alphabet they cannot check.
 **The interface is English-first and conversational. The app asks; the family
 answers. The finished stone is drawn on screen at all times.**
 
+### 0. The core function is translation, not template-filling
+
+**The family says what they want in English. The app produces the Hebrew.**
+
+That is the product. The familiar `פ״נ` / name / date / closing structure is
+a starting point the app offers, not the shape of the output — see
+`docs/domain/eagle-granite-form.md` § "Lines are free-form". A family may
+want a tribute, a verse, a phrase of their own, in any of the five lines.
+
+The form gives **140 characters across five lines**, which is considerably
+more room than the standard four lines use. That spare capacity is for the
+family's own words, and reaching it requires translating English into Hebrew
+— not selecting from a menu.
+
+Consequences that follow from this and not from a template model:
+
+- The Hebrew shown is **generated per order**, not assembled from fixed
+  strings. A prototype that displays a canned inscription demonstrates the
+  layout and nothing else.
+- Translation quality is a **correctness concern**, not a convenience. A
+  mistranslated tribute is carved exactly as faithfully as a correct one.
+- Every translated line needs the family to confirm the meaning came back
+  right — which is what the back-translation and pronunciation are for.
+- Hebrew date conversion is a separate, exact computation and is never a
+  translation problem. It is the one part the app can get right without
+  asking anyone.
+
 ### 1. The app interviews, the family answers
 
 Not a free-form chat box. The app knows what it still needs and asks for it,
@@ -59,28 +86,12 @@ One competent reader glancing at the screen catches more than any amount of
 our own checking. It is the cheapest verification the product will ever get,
 and it costs a sentence of copy.
 
-### 5. Russian is offered; English is the baseline
-
-The community is substantially Soviet-immigrant, but **its members read
-English too** — Russian is a comfort, not a rescue, and the product is not
-blocked without it. Offered as a toggle covering the interview, the meanings
-and the pronunciation.
-
-The pronunciation must be **re-transliterated per language**: `SAH-rah` is an
-English respelling and a Russian speaker would read it wrong. In Russian it
-is `СА-ра бат ав-ра-ХАМ`. A translated interface that keeps English phonetics
-has broken the one mechanism that makes the name checkable.
-
-**The Hebrew itself never varies by interface language.** It is the artifact;
-only the scaffolding around it is translated.
-
 ## What this rules out
 
 - Requiring any Hebrew literacy to complete an order.
 - Hiding the stone behind a tab or a step.
 - Deriving a Hebrew name from an English one without confirmation — see
   `docs/domain/hebrew-inscriptions.md` §3.
-- Sharing one phonetic respelling across interface languages.
 
 ## Consequences
 
@@ -93,4 +104,3 @@ only the scaffolding around it is translated.
   day.
 - Approval is disabled while either is open, and the button states what is
   outstanding.
-- Adding a language means adding a phonetic scheme, not just strings.
