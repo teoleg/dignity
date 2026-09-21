@@ -8,7 +8,7 @@ Guidance for AI assistants working in this repository.
 
 **The deterministic core exists and is tested.** `src/lib/` holds the
 character table, the Hebrew date logic, the inscription composer, the form
-renderer, the translation vetting and the model-driven dialogue, with 114
+renderer, the translation vetting and the model-driven dialogue, with 120
 passing tests.
 
 **Running the dialogue needs `ANTHROPIC_API_KEY`.** Everything else runs
@@ -18,7 +18,7 @@ Gregorian date in, a filled PDF of the vendor's own form out. There is no
 application around it yet — no Next.js app, no database, no UI.
 
 ```
-npm test          # vitest, 114 tests
+npm test          # vitest, 120 tests
 npm run typecheck # tsc --noEmit, strict
 npx tsx scripts/render-sample.ts <blank-image> out.pdf
 npm run build:web  # bundle src/browser for an artifact page
@@ -187,11 +187,16 @@ Design notes that are easy to undo by accident:
 - `hebrewDateOfDeath(..., "unknown")` returns **both** candidate dates and
   resolves nothing. Code that treats `ambiguous` as "use `ifDaytime`" has
   reintroduced the bug the type exists to prevent.
-- **`stripNikud` is applied to hebcal output only.** hebcal renders months
-  pointed (`שְׁבָט`) and the form has no code for those marks. Text a *person*
-  supplied keeps its marks and is refused by the encoder instead — so a
-  family is told their spelling cannot be engraved rather than having it
-  silently altered.
+- **`stripPointing` is for hebcal output only, and it takes the dagesh too.**
+  hebcal renders months fully pointed (`כִּסְלֵו`, `תִּשְׁרֵי`) and there the dagesh
+  is pointing, not spelling. Keeping it broke two ways at once: Kislev,
+  Iyyar, Tamuz and Elul carried כּ יּ מּ וּ, which the form has no code for, so
+  those months could not be filled at all; and Tishrei's תּ encoded as code 1
+  where plain ת is code 29 — silently the wrong character. Every month of
+  four years is now encoded in the tests. Text a *person* supplied goes
+  through `stripNikud`, keeps its marks and is refused by the encoder instead
+  — so a family is told their spelling cannot be engraved rather than having
+  it silently altered.
 - `layOutRightToLeft` is the only place that knows about fill direction. The
   encoder has no opinion about it and so cannot silently reverse anything.
 - **`detectGrid` throws rather than returning a near-miss.** It asserts five
@@ -218,7 +223,12 @@ Design notes that are easy to undo by accident:
 - **The model never computes the Hebrew date** and is told so explicitly. The
   library derives it from the Gregorian date and the time of death. Anything
   the model writes in Hebrew letters for a date would be wrong.
-- `derive()` decides whether an inscription is finished, not the model.
+- `derive()` decides whether an inscription is finished, not the model —
+  and `promptFor` tells the model what is still open, or it announces that a
+  blocked order is complete and the family reads that as done.
+- **The model has no way to send anything** and is told so. It has claimed to
+  be "passing this along to the engraver"; nothing is sent anywhere, and a
+  family believing an order was placed is a serious failure.
 - **Only what the Hebrew needs can block the form.** `derive` requires the
   Hebrew name, the father's, the gender and the date. The English names are
   the family's gloss and are never engraved, so a missing one falls back to
@@ -324,7 +334,7 @@ the images, and do not put real names or dates into committed files.
 CLAUDE.md               this file
 package.json            npm test · npm run typecheck
 src/lib/                the tested core — see "What is built"
-src/lib/__tests__/      114 tests
+src/lib/__tests__/      120 tests
 src/browser/            browser bundle for the artifact page
 scripts/render-sample.ts  dev utility: fill a blank and write a PDF
 docs/domain/

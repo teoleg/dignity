@@ -147,7 +147,15 @@ HARD RULES:
   say so in the note. Inscriptions are terse; do not translate a sentence as
   a sentence. It must fit ${BOXES_PER_LINE} characters.
 - If you cannot render something honestly within the constraints, say so
-  rather than offering something approximate. This is carved in stone.`.trim();
+  rather than offering something approximate. This is carved in stone.
+- You cannot send, submit, order, file or deliver anything, and you are not
+  in contact with the cemetery or the engraver. The family saves the filled
+  form and hands it in themselves. NEVER say you are sending it, passing it
+  along, or that it is on its way — a family will believe the order has been
+  placed when nothing has happened.
+- You do not decide when the order is finished. The prompt tells you what is
+  still open. While anything is open, do not say it is complete, ready or all
+  set; say what is still needed.`.trim();
 
 /**
  * Build the user turn both drivers send. Kept here so the browser and the
@@ -167,9 +175,21 @@ export function transcript(history: readonly Message[]): string {
   return history.map((m) => `${m.role === "user" ? "Family" : "You"}: ${m.content}`).join("\n");
 }
 
-/** The prompt body: what is known, then the conversation. */
+/**
+ * The prompt body: what is known, what is still open, then the conversation.
+ *
+ * The open list comes from `derive`, not from the model. Without it a model
+ * that believes it has everything announces the order is finished while the
+ * form is still blocked — which a grieving family reads as "it is done".
+ */
 export function promptFor(draft: Draft, history: readonly Message[]): string {
-  return `Known so far (JSON): ${describeDraft(draft)}\n\nConversation:\n${transcript(history)}`;
+  const open = derive(draft).blockers;
+  const stillOpen = open.length > 0 ? open.join(" ") : "nothing — the form can be filled now";
+  return [
+    `Known so far (JSON): ${describeDraft(draft)}`,
+    `Still open, decided by the system and not by you: ${stillOpen}`,
+    `Conversation:\n${transcript(history)}`,
+  ].join("\n\n");
 }
 
 export type ParsedTurn = z.infer<typeof TurnSchema>;

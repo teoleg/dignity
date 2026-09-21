@@ -9,7 +9,7 @@
  */
 
 import { HDate } from "@hebcal/core";
-import { stripNikud } from "./hebrew-text.js";
+import { stripPointing } from "./hebrew-text.js";
 
 /**
  * When the death occurred relative to sunset.
@@ -43,13 +43,15 @@ export type DateOfDeath =
   | { status: "ambiguous"; ifDaytime: HebrewDate; ifAfterSunset: HebrewDate };
 
 function render(h: HDate): HebrewDate {
-  // renderGematriya() returns the month pointed — `שְׁבָט`. The form has no
+  // renderGematriya() returns the month pointed — `שְׁבָט`, `כִּסְלֵו`. The form has no
   // code for niqqud, so strip it here rather than let the encoder reject a
-  // string the family never typed. See hebrew-text.stripNikud.
-  const text = stripNikud(h.renderGematriya());
+  // string the family never typed. See hebrew-text.stripPointing — the
+  // dagesh goes too, or Kislev cannot be engraved and Tishrei is engraved
+  // with the wrong character.
+  const text = stripPointing(h.renderGematriya());
   return {
     day: h.getDate(),
-    monthHebrew: stripNikud(h.render("he").split(" ")[1]?.replace(/,$/, "") ?? ""),
+    monthHebrew: stripPointing(h.render("he").split(" ")[1]?.replace(/,$/, "") ?? ""),
     monthEnglish: h.getMonthName(),
     year: h.getFullYear(),
     text,

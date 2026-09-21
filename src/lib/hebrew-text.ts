@@ -27,15 +27,31 @@ export function canonical(s: string): string {
 /**
  * Remove vowel points and cantillation, keeping the dagesh.
  *
- * Needed because `@hebcal/core` renders month names pointed — `שְׁבָט`, not
- * `שבט` — and the form has no code for any of those marks. Stripping is
- * correct here rather than an error: the marks are the library's presentation
- * choice, not something a family typed. Input that a *person* supplied keeps
- * its marks and is rejected by the encoder instead, so the family is told
- * their spelling cannot be engraved rather than having it silently altered.
+ * For text that is already unpointed apart from a meaningful בּ or תּ. It is
+ * NOT enough for `@hebcal/core` output — see `stripPointing`.
  */
 export function stripNikud(s: string): string {
   return canonical(s).replace(NIKUD, "");
+}
+
+/**
+ * Remove every mark, the dagesh included. For library output only.
+ *
+ * `@hebcal/core` renders month names fully pointed — `כִּסְלֵו`, `תִּשְׁרֵי`,
+ * `תַּמּוּז` — and there the dagesh is pointing, not spelling: the engraved
+ * spellings are כסלו, תשרי, תמוז with plain letters. Keeping it was wrong in
+ * two ways at once. Kislev, Iyyar, Tamuz and Elul came out carrying כּ, יּ,
+ * מּ, וּ, which the form has no code for, so the order could not be filled at
+ * all for anyone who died in those months. Tishrei and Tamuz were worse: the
+ * leading תּ encodes as code 1 instead of ת's code 29, so the form filled
+ * silently with the wrong character.
+ *
+ * This is for hebcal's output and nothing else. Text a *person* supplied
+ * keeps its marks and is refused by the encoder instead, so a family is told
+ * their spelling cannot be engraved rather than having it silently altered.
+ */
+export function stripPointing(s: string): string {
+  return canonical(s).replace(NIKUD, "").replaceAll(DAGESH, "");
 }
 
 /** True if the string carries marks the form cannot represent. */

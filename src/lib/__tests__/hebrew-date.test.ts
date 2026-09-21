@@ -13,6 +13,50 @@ const resolved = (d: Date, when: "daytime" | "after-sunset") => {
   return r.hebrew;
 };
 
+/**
+ * Every month, encodable and encoded correctly.
+ *
+ * hebcal renders month names pointed, and the dagesh used to survive. Kislev,
+ * Iyyar, Tamuz and Elul came out with כּ, יּ, מּ, וּ — characters the form has
+ * no code for — so a death in those months could not be put on the form at
+ * all. Tishrei and Tamuz were the dangerous case: the pointed תּ encodes as
+ * code 1 where plain ת is code 29, and nothing complained.
+ */
+describe("every Hebrew month reaches the form", () => {
+  // A leap year (13 months) and a common year, every day-of-month shape.
+  for (const year of [2024, 2025, 2026, 2027]) {
+    it(`encodes every month of ${year}`, () => {
+      for (let m = 0; m < 12; m++) {
+        for (const day of [1, 10, 15, 16, 22, 28]) {
+          const { text } = resolved(new Date(year, m, day), "daytime");
+          const enc = encodeLine(`נ״פ ${text}`);
+          if (!enc.ok) {
+            throw new Error(
+              `${year}-${m + 1}-${day} gives "${text}", refused: ` +
+                enc.unrepresentable.map((u) => `${u.char} ${u.codepoint}`).join(", "),
+            );
+          }
+          // No pointed form may reach the form: they are different codes.
+          expect(text).not.toMatch(/\u05BC/);
+        }
+      }
+    });
+  }
+
+  it("spells Kislev with a plain kaf", () => {
+    // 12 Dec 2025 is in Kislev. Synthetic date, no real order.
+    expect(resolved(new Date(2025, 11, 12), "daytime").text).toContain("כסלו");
+  });
+
+  it("spells Tishrei with plain tav, which is code 29 and not code 1", () => {
+    const t = resolved(new Date(2025, 9, 1), "daytime").text;
+    expect(t).toContain("תשרי");
+    const enc = encodeLine("תשרי");
+    if (!enc.ok) throw new Error("Tishrei should encode");
+    expect(enc.boxes[0]).toBe(29);
+  });
+});
+
 describe("gematria", () => {
   it("writes a single-letter day with a geresh", () => {
     expect(resolved(JAN_13, "daytime").text).toBe("ג׳ שבט תשפ״ד");
