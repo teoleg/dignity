@@ -47,7 +47,7 @@ class WebDriver {
   }
 }
 
-/** A plain anchor download — no capability needed off-platform. */
+/** A plain file download. */
 const save = async (filename: string, data: Uint8Array) => {
   // Copy into a plain ArrayBuffer: a Uint8Array over SharedArrayBuffer is
   // not a valid BlobPart.
@@ -60,7 +60,7 @@ const save = async (filename: string, data: Uint8Array) => {
   document.body.append(a);
   a.click();
   a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 10_000);
+  setTimeout(() => URL.revokeObjectURL(url), 30_000);
 };
 
 function askForPass(): Promise<void> {

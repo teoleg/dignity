@@ -9,6 +9,7 @@
 
 import { renderForm } from "./render-browser.js";
 import { encodeLine, BOXES_PER_LINE, LINES_PER_FORM, type Box } from "../lib/form-table.js";
+import { derive } from "../lib/conversation.js";
 import type { Draft, Message, Turn } from "../lib/conversation.js";
 import type { Line } from "../lib/inscription.js";
 
@@ -146,28 +147,104 @@ function apply(turn: Turn) {
   }
   bubble("d", html);
   render();
-  offerForm();
+  offerNext();
 }
 
 /**
- * Surface the finished form in the conversation.
+ * Move the conversation forward on whatever is standing in the way.
  *
- * It used to live only at the bottom of the "Check lines" sheet, which meant
- * the app's actual output was two taps and a scroll away and people finished
- * the dialogue without ever finding it.
+ * Two things used to go wrong here. The form lived only at the bottom of the
+ * "Check lines" sheet, so people finished and never found it. And confirming
+ * the name depended on the model choosing to record it — if it did not, the
+ * order stayed blocked forever with nothing on screen saying why. Both are
+ * decided here now, from state the page can see.
  */
-let offered = false;
-function offerForm() {
-  if (blockers.length > 0) {
-    offered = false;
+let asked = { confirm: "", sunset: "", offered: false };
+
+function offerNext() {
+  // The family confirms the spelling by ear. That is a decision they make,
+  // so it is a button, not something inferred from what they typed.
+  if (draft.hebrewGiven && !draft.nameConfirmed && asked.confirm !== draft.hebrewGiven) {
+    asked.confirm = draft.hebrewGiven;
+    const el = bubble(
+      "d",
+      `<p>Read that out loud. Is it how the name was said?</p>
+       <button class="btn wide" id="nameok" type="button">Yes, that is right</button>
+       <button class="btn wide ghost" id="namebad" type="button" style="margin-top:8px">No, it is not</button>`,
+    );
+    const settle = (text: string) => {
+      const box = el.querySelector(".bubble");
+      if (box) box.innerHTML = `<p class="hint">${text}</p>`;
+    };
+    el.querySelector("#nameok")?.addEventListener("click", () => {
+      draft = { ...draft, nameConfirmed: true };
+      const d = derive(draft);
+      lines = d.lines;
+      blockers = d.blockers;
+      settle("Confirmed.");
+      history.push({ role: "user", content: "Yes, that spelling is right." });
+      render();
+      offerNext();
+    });
+    el.querySelector("#namebad")?.addEventListener("click", () => {
+      draft = { ...draft, nameConfirmed: false };
+      const d2 = derive(draft);
+      lines = d2.lines;
+      blockers = d2.blockers;
+      settle("Not confirmed — tell me how it should sound.");
+      history.push({ role: "user", content: "No, that spelling is wrong." });
+      asked.confirm = "";
+      render();
+    });
     return;
   }
-  if (offered) return;
-  offered = true;
+
+  // Day or evening decides the Hebrew date, and it is the family's answer to
+  // give, not something to be read out of prose. Same reasoning as the name:
+  // a correctness-critical fact should not depend on the model recording it.
+  if (draft.diedOn && draft.timeOfDeath !== "daytime" && draft.timeOfDeath !== "after-sunset"
+      && asked.sunset !== draft.diedOn) {
+    asked.sunset = draft.diedOn;
+    const el = bubble(
+      "d",
+      `<p>Was it during the day, or in the evening?</p>
+       <p class="hint">The Jewish day starts at sunset, so an evening death is recorded on the next day. It sets the date remembered every year.</p>
+       <button class="btn wide" id="tday" type="button">During the day</button>
+       <button class="btn wide ghost" id="teve" type="button" style="margin-top:8px">In the evening</button>
+       <button class="btn wide ghost" id="tidk" type="button" style="margin-top:8px">Nobody knows</button>`,
+    );
+    const settle = (text: string) => {
+      const box = el.querySelector(".bubble");
+      if (box) box.innerHTML = `<p class="hint">${text}</p>`;
+    };
+    const pick = (t: "daytime" | "after-sunset" | "unknown", said: string) => {
+      draft = { ...draft, timeOfDeath: t };
+      const d = derive(draft);
+      lines = d.lines;
+      blockers = d.blockers;
+      settle(said);
+      history.push({ role: "user", content: said });
+      render();
+      if (t === "unknown") asked.sunset = "";
+      else offerNext();
+    };
+    el.querySelector("#tday")?.addEventListener("click", () => pick("daytime", "During the day."));
+    el.querySelector("#teve")?.addEventListener("click", () => pick("after-sunset", "In the evening."));
+    el.querySelector("#tidk")?.addEventListener("click", () =>
+      pick("unknown", "Nobody knows — the date stays unconfirmed."));
+    return;
+  }
+
+  if (blockers.length > 0) {
+    asked.offered = false;
+    return;
+  }
+  if (asked.offered) return;
+  asked.offered = true;
   const el = bubble(
     "d",
-    `<p><strong>That is everything.</strong> Read the lines once more, then take the form to the cemetery office.</p>
-     <button class="btn wide" id="chatdl" type="button">Download the filled order form</button>
+    `<p><strong>That is everything.</strong> Here is the order form, filled in.</p>
+     <button class="btn wide" id="chatdl" type="button">Download the filled form (PDF)</button>
      <button class="btn wide ghost" id="chatcheck" type="button" style="margin-top:8px">Check every line first</button>`,
   );
   el.querySelector("#chatdl")?.addEventListener("click", () => void download("chatdl"));
@@ -263,12 +340,14 @@ function render() {
     <h3 class="sub">The order form that gets sent</h3>
     <div class="formscroll"><div class="formwide">${sheet}</div></div>
     <p class="swipe">Swipe sideways to see all ${BOXES_PER_LINE} boxes. We fill them right to left — you never type a number.</p>
-    <button class="btn wide" id="dl" ${ready ? "" : "disabled"}>${ready ? "Download the filled form" : "Not ready yet"}</button>`;
+    <button class="btn wide" id="dl" ${ready ? "" : "disabled"}>${ready ? "Download the filled form (PDF)" : "Not ready yet"}</button>`;
 
   const dl = document.getElementById("dl");
   if (dl && ready) dl.addEventListener("click", () => void download("dl"));
 
-  $("ck-blockers").textContent = ready ? "Ready" : `${blockers.length} to resolve`;
+  $("ck-blockers").textContent = ready
+    ? "Ready — form available"
+    : blockers[0] ?? "Not started";
   $("ck-blockers").className = "ck " + (ready ? "done" : lines.length ? "open" : "");
   $("pill").textContent = ready ? "Ready" : "Draft";
 }
@@ -306,7 +385,7 @@ async function download(which: "dl" | "chatdl" = "dl") {
     console.error(e);
   } finally {
     if (which === "dl") setTimeout(() => render(), 2500);
-    else setTimeout(() => { btn.disabled = false; btn.textContent = "Download the filled order form"; }, 2500);
+    else setTimeout(() => { btn.disabled = false; btn.textContent = "Download the filled form (PDF)"; }, 2500);
   }
 }
 
