@@ -8,12 +8,17 @@ Guidance for AI assistants working in this repository.
 
 **The deterministic core exists and is tested.** `src/lib/` holds the
 character table, the Hebrew date logic, the inscription composer, the form
-renderer and the translation vetting, with 96 passing tests. It goes end to end: names and a
+renderer, the translation vetting and the model-driven dialogue, with 111
+passing tests.
+
+**Running the dialogue needs `ANTHROPIC_API_KEY`.** Everything else runs
+offline; the conversation and translation layers are typechecked and
+unit-tested against stubs but have never made a live call. It goes end to end: names and a
 Gregorian date in, a filled PDF of the vendor's own form out. There is no
 application around it yet — no Next.js app, no database, no UI.
 
 ```
-npm test          # vitest, 96 tests
+npm test          # vitest, 111 tests
 npm run typecheck # tsc --noEmit, strict
 npx tsx scripts/render-sample.ts <blank-image> out.pdf
 ```
@@ -145,6 +150,7 @@ The short version of the hard parts:
 | `src/lib/form-render.ts` | Draws the numbers onto the vendor's blank, out as PDF |
 | `src/lib/translation.ts` | Vets model output; independent back-translation (ADR 0006) |
 | `src/lib/translation-claude.ts` | Claude adapter — **not yet run against the live API** |
+| `src/lib/conversation.ts` | Model-driven dialogue; extracts facts, proposes Hebrew |
 
 Design notes that are easy to undo by accident:
 
@@ -178,6 +184,13 @@ Design notes that are easy to undo by accident:
   isolation *is* the verification.
 - `possibleDrift` is a hint, not a verdict. Never present it as a correctness
   judgement.
+- **No hardcoded phrase tables or question scripts.** Understanding what a
+  family meant is the model's job. Translation and name spelling come from
+  the model; a lookup table was tried and removed.
+- **The model never computes the Hebrew date** and is told so explicitly. The
+  library derives it from the Gregorian date and the time of death. Anything
+  the model writes in Hebrew letters for a date would be wrong.
+- `derive()` decides whether an inscription is finished, not the model.
 
 ## Scope discipline — read this before proposing anything
 
