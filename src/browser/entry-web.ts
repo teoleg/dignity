@@ -9,6 +9,7 @@ import { start } from "./app.js";
 import type { Draft, Message, Turn } from "../lib/conversation.js";
 
 const PASS_KEY = "dignity.pass";
+const BLANK_KEY = "dignity.blank";
 
 function readPass(): string {
   try {
@@ -80,12 +81,61 @@ function askForPass(): Promise<void> {
   });
 }
 
+/**
+ * Where the vendor blank comes from.
+ *
+ * A deployment made from the repository has none — it is the vendor's
+ * artwork and is deliberately not committed. So: use the one the deployment
+ * shipped if it has it, else one a viewer added before, else ask.
+ */
+async function findBlank(): Promise<string> {
+  try {
+    const res = await fetch("/blank-form.jpg", { method: "HEAD" });
+    if (res.ok) return "/blank-form.jpg";
+  } catch {
+    /* not deployed with one */
+  }
+  try {
+    return localStorage.getItem(BLANK_KEY) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+/** Ask the viewer for the blank, and remember it on this device. */
+function pickBlank(): Promise<string> {
+  return new Promise((resolve) => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+    input.addEventListener("change", () => {
+      const file = input.files?.[0];
+      if (!file) return resolve("");
+      const reader = new FileReader();
+      reader.onload = () => {
+        const uri = String(reader.result ?? "");
+        try {
+          localStorage.setItem(BLANK_KEY, uri);
+        } catch {
+          /* too large for storage: still usable this session */
+        }
+        resolve(uri);
+      };
+      reader.onerror = () => resolve("");
+      reader.readAsDataURL(file);
+    });
+    // Cancel leaves no event on some browsers; the viewer can press again.
+    input.click();
+  });
+}
+
 async function boot() {
   if (!readPass()) await askForPass();
   await start({
     driver: new WebDriver(),
     save,
-    blank: "/blank-form.jpg",
+    blank: await findBlank(),
+    onNeedBlank: pickBlank,
   });
 }
 void boot();

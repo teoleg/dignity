@@ -36,7 +36,10 @@ model:
   viewer to be signed in to Claude.
 
 `public/blank-form.jpg` and `public/app.js` are gitignored: the first is the
-vendor's artwork, the second is build output.
+vendor's artwork, the second is build output. A deployment without the blank
+still runs the dialogue; the page asks a viewer for the image the first time
+someone wants the filled form, and keeps it in their browser. That is what
+makes a phone-only deploy possible.
 
 Everything in `docs/decisions/` beyond ADR 0002 describes work not yet built.
 Treat the ADRs as intent; treat `src/` as fact, and update this file when

@@ -10,11 +10,30 @@ Free hosting; you pay only for model usage, which is cents per order.
    the server; it never reaches a browser.
 2. **A Vercel account** — vercel.com, sign in with GitHub. Free tier is
    enough.
-3. **Put the blank form at `public/blank-form.jpg`.** It is gitignored on
-   purpose: it is the vendor's artwork and does not belong in the repository.
-   Without it the conversation still works and the form download does not.
+3. **The blank form is optional at deploy time.** It is gitignored on
+   purpose — the vendor's artwork does not belong in the repository. If you
+   put it at `public/blank-form.jpg` before deploying, it ships with the
+   site. If you do not, the first person to ask for the filled form is
+   invited to pick the image, and their browser remembers it. Either way the
+   conversation works.
 
-## Deploy
+## Deploy from a phone, no computer
+
+vercel.com works in a phone browser.
+
+1. **vercel.com** → sign in with GitHub
+2. **Add New → Project** → *Import Git Repository* → `teoleg/dignity`
+3. Leave every build setting alone. `vercel.json` already says what to run.
+4. Open **Environment Variables** and add:
+   - `ANTHROPIC_API_KEY` — your key
+   - `DIGNITY_PASSCODE` — any word you will give your testers
+5. **Deploy**, and wait a minute or two.
+
+You get a URL. Open it, enter the passcode, and the first time you ask for
+the filled form it asks you to pick the blank form image — choose the photo
+of the order sheet from your phone. It is remembered after that.
+
+## Deploy from a computer
 
 ```bash
 npm install

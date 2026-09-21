@@ -30,8 +30,15 @@ export type Saver = (filename: string, data: Uint8Array) => Promise<void>;
 export interface StartOptions {
   driver: Driver;
   save: Saver;
-  /** Data URI or URL of the vendor blank. */
+  /** Data URI or URL of the vendor blank; "" when none is available yet. */
   blank: string;
+  /**
+   * Asked for the blank when the viewer wants the form and none is present.
+   * Resolves to a data URI, or "" if they changed their mind. Lets a
+   * deployment that shipped without the vendor's artwork acquire it from
+   * whoever has it, on a phone, without a rebuild.
+   */
+  onNeedBlank?: () => Promise<string>;
   /** Shown when the driver cannot be created at all. */
   unavailable?: string;
 }
@@ -48,6 +55,7 @@ let convo: Driver | null = null;
 let busy = false;
 let saveFile: Saver | null = null;
 let blankSource = "";
+let askForBlank: (() => Promise<string>) | null = null;
 
 /* ---------------------------------------------------------------- chat */
 
@@ -213,7 +221,15 @@ async function download() {
   btn.disabled = true;
   btn.textContent = "Building the form…";
   try {
-    if (!blankSource) throw new Error("no blank form available");
+    if (!blankSource && askForBlank) {
+      btn.textContent = "Choose the order form…";
+      blankSource = await askForBlank();
+    }
+    if (!blankSource) {
+      btn.textContent = "Add the blank order form to continue";
+      setTimeout(() => render(), 3000);
+      return;
+    }
     if (!saveFile) throw new Error("saving unavailable");
     const out = await renderForm(blankSource, lines.map((l) => l.boxes), { cleanScan: true });
     await saveFile("monument-order-form.pdf", out.pdf);
@@ -233,6 +249,7 @@ export async function start(opts: StartOptions): Promise<void> {
   convo = opts.driver;
   saveFile = opts.save;
   blankSource = opts.blank;
+  askForBlank = opts.onNeedBlank ?? null;
   $("peek").addEventListener("click", () => ($("sheet-stone").hidden = false));
   $("openchecks").addEventListener("click", () => ($("sheet-checks").hidden = false));
   document.addEventListener("click", (e) => {
