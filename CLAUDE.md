@@ -27,14 +27,38 @@ process is slow, opaque to anyone who does not read Hebrew, and produces
 mistakes. Hebrew date conversion, gender agreement, and inscription style are
 all places where errors get through.
 
+### How an order works today
+
+```
+cemetery staff  ──gives blank form──▶  family member
+family member   ──hand-encodes Hebrew as numbers──▶  staff
+staff           ──sends──▶  Eagle Granite (Elberton, GA)
+Eagle Granite   ──returns proof drawing──▶  family member
+family member   ──checks and signs──▶  stone is cut
+```
+
+**The person hand-encoding Hebrew into numbers is a grieving family member**,
+not a professional, possibly not a Hebrew reader, days after a death. That is
+the problem.
+
+There are **two** moments where this tool helps:
+
+1. **Filling the form** — compose the Hebrew, emit the number sequence.
+2. **Checking the returned proof** — confirm what came back is what was
+   ordered. Currently also done by someone who may not read Hebrew, and it is
+   the last line of defense before granite is cut.
+
+(2) is arguably as valuable as (1) and is a smaller build. Which comes first
+is still open — see `docs/open-questions.md` § B.
+
 Intended shape of v1:
 
 1. A simple form: the deceased's details — names, dates, relationships.
 2. The service composes the Hebrew inscription, including the Hebrew date.
 3. A live preview of the finished stone, updating as the user types.
 4. A chat assistant alongside it, for questions and adjustments.
-5. On approval, output a printable form with the numeric encoding the
-   cemetery requires, plus a visual proof of the final product.
+5. On approval, output the numeric encoding the form requires, plus a visual
+   proof of the final product.
 
 ### The thing that makes this project different
 
@@ -69,8 +93,15 @@ The short version of the hard parts:
   `pyluach` (Python).
 - **Gematria 15 and 16 are ט״ו and ט״ז**, not י״ה and י״ו, which spell a name
   of God. Place-value conversion gets this wrong.
-- **The cemetery's number-per-letter code is a glyph index, not gematria.**
-  It must be transcribed from their sheet. Never infer it.
+- **The number-per-letter code is a glyph index, not gematria** — confirmed:
+  code 1 is תּ, not א. The full 1–31 table is decoded in
+  `docs/domain/eagle-granite-form.md`. Never infer a letter/value relation.
+- **The form has no space, no nikud and no Yiddish diacritics.** Some names
+  genuinely cannot be expressed on it. Say so plainly; never substitute
+  silently.
+- **`פ״נ` and `נ״פ` are the same two characters reversed.** A transposition
+  still looks like Hebrew. Always render the numbers back into Hebrew and
+  show the user, so the error is visible instead of hidden in digits.
 - **Canonical Unicode Hebrew is the source of truth**; the numeric code is a
   render target produced by a pure, table-driven, round-trip-tested function.
 - **Gender is one field per record**, and every derived string reads from it.
@@ -79,18 +110,25 @@ The short version of the hard parts:
 
 ## Current state and what to do next
 
-Work is blocked on samples the user is providing: the cemetery's order sheet
-and an example of a finished monument. They belong in `samples/`.
+The order form and a real proof have been read. The character table, fill
+direction, layout and house style are transcribed in
+`docs/domain/eagle-granite-form.md`. **The encoder is now unblocked.**
 
-`docs/open-questions.md` is the live list of what we don't know. It is
-organized so the blocking items — the ones the samples answer — are first.
-**Read it before proposing implementation work**, and keep it current: when a
-question gets answered, move the answer into the right doc and delete the
-entry.
+Two style questions are *not* settled and are blocking faithful output —
+whether `נ״פ` on the death line is correct or a reversal, and whether the
+non-standard `ת'נ'צ'ב'ה'` is house style. Both need the cemetery or a rabbi.
+See `docs/open-questions.md` § A1. Do not reproduce either until answered;
+codifying an error would put it on every future stone.
 
-Do not write encoder code against a guessed character table. A guessed table
-produces wrong stones, which is the exact failure this project exists to
-prevent.
+`docs/open-questions.md` is the live list of what we don't know. **Read it
+before proposing implementation work**, and keep it current.
+
+### Sample material is not in this repository
+
+Real forms and proofs carry a named family's personal details. `.gitignore`
+excludes everything under `samples/`. What was read from them has been
+transcribed, personal details removed, into the domain docs. Do not commit
+the images, and do not put real names or dates into committed files.
 
 ---
 
@@ -100,10 +138,12 @@ prevent.
 
 ```
 CLAUDE.md               this file
-docs/domain/            domain knowledge — Hebrew, calendar, encoding
+docs/domain/
+  hebrew-inscriptions.md  Hebrew, calendar, gematria, naming
+  eagle-granite-form.md   the vendor form: code table, layout, house style
 docs/decisions/         architecture decision records (empty; see below)
 docs/open-questions.md  what we don't know yet
-samples/                cemetery order sheet + finished-product examples
+samples/                LOCAL ONLY — gitignored, never committed
 ```
 
 No source layout yet — it follows from decisions not yet made.
@@ -130,6 +170,9 @@ into stone, unmarked guesses are the main hazard.
 - Test data must include both precomposed and combining-mark spellings of the
   same Yiddish glyphs — they look identical and encode differently.
 - Never reverse Hebrew strings to "fix" display direction. Fix the rendering.
+- Example and test dates are **synthetic**. `13 Jan 2024` and `25 Jan 2024`
+  are the house examples — the second exercises the ט״ו/ט״ז trap and the
+  sunset shift at once. Never reach for a real order to make a point.
 
 ### Git
 
@@ -143,8 +186,14 @@ into stone, unmarked guesses are the main hazard.
 - **Do not invent domain facts.** If a Hebrew, calendar, or halachic detail
   is uncertain, say so and flag it for rabbinic review. Confident wrong
   answers are the primary risk in this project.
-- **Do not fill in the character encoding table from inference.** It comes
-  from the cemetery's sheet or it does not exist.
+- **Use the confirmed table in `eagle-granite-form.md` verbatim.** Do not
+  extend it by inference — if a character is not in it, the form cannot
+  express it, and that is a fact to surface, not a gap to fill.
+- **Never commit real personal data — in docs, code, tests, or fixtures.**
+  No real decedent names, no real dates of death, no family contact details,
+  no sample forms or proofs. Use synthetic dates and invented names in every
+  example and test. This is not a style preference: the repository is the one
+  artifact that outlives any individual order.
 - Prefer a hard error or a blocking flag over a plausible default, anywhere
   an ambiguity affects what gets engraved.
 - When you add real code, update this file to describe what is actually

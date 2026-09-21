@@ -1,0 +1,9 @@
+# Real order forms and proofs contain a named family's personal details and
+# vendor paperwork. They are reference material only and must never be
+# committed. Keep them local; see samples/README.md.
+samples/*
+!samples/README.md
+
+# Scratch
+.DS_Store
+*.tmp

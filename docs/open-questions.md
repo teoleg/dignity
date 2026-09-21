@@ -6,81 +6,90 @@ the entry.
 
 ---
 
-## A. Blocking — the samples should answer these
+## RESOLVED — moved to docs
 
-These block implementation of the encoder. The user is uploading the
-cemetery's order sheet and a finished-product sample; both go in `samples/`.
+The character table, fill direction, form layout, house style and the order
+workflow are now transcribed in `docs/domain/eagle-granite-form.md`.
+Headlines:
 
-### A1. The character → number table
-- [ ] Full table transcribed, every character the sheet supports
-- [ ] Is it 1-based or 0-based?
-- [ ] Do final (sofit) forms — ך ם ן ף ץ — have their own codes, separate
-      from their non-final counterparts?
-- [ ] Are Yiddish characters (אַ אָ בֿ פֿ וו ױ ײ ײַ) coded? As single codes, or
-      as sequences of base + mark?
-- [ ] Are geresh ׳ and gershayim ״ coded? They are unavoidable — every date
-      and every abbreviation uses them.
-- [ ] Is there a code for a space? For a line break? For centering?
-- [ ] Is the mapping bijective, or do several characters share a code?
+- The 1–31 code table is **fully decoded and confirmed**. It is a glyph
+  index, not gematria (code 1 is תּ, not א).
+- Fill direction is printed on the form: **right to left**.
+- The user is a **grieving family member**, not staff.
+- There is a **second** high-value moment: checking the proof that comes back.
 
-### A2. Ordering and layout
-- [ ] Is the number sequence in **logical** order (first letter read = first
-      number) or **visual** RTL order (rightmost letter = first number)?
-      Getting this backwards produces a mirrored inscription.
-- [ ] How are line breaks represented on the sheet?
+---
+
+## A. Blocking — needs the cemetery, the vendor, or a rabbi
+
+### A1. The two style anomalies on the proof
+- [ ] Is `נ״פ` on the death line the intended abbreviation of נפטר/נפטרה, or
+      a right-to-left transposition of `פ״נ`? **Do not reproduce until
+      confirmed** — codifying an error would make every future stone wrong.
+- [ ] Is `ת'נ'צ'ב'ה'` (geresh after each letter) house style, or an artifact
+      of the encoding? Classical form is `תנצב״ה`.
+
+Both are questions for the cemetery office or a rabbi, not for us.
+
+### A2. Mechanics still unconfirmed
+- [ ] How is a **space** represented? There is no code for it. Leave the box
+      empty, or something else? Affects every inscription.
+- [ ] Exact number of boxes per row (~30), and whether "Inscription" is a
+      shared line or simply the first of five.
+- [ ] What happens when text exceeds one line — who decides the break?
 - [ ] Is line centering the engraver's job or the orderer's?
-- [ ] Is there a maximum characters-per-line or lines-per-stone?
-- [ ] Fixed-width numeric fields (leading zeros) or variable?
 
-### A3. House style, from the finished-product sample
-- [ ] פ״נ or פ״ט as the opening?
-- [ ] חשון or מרחשון? אב or מנחם אב?
-- [ ] Is the year written with לפ״ק appended?
-- [ ] Are honorifics (ר׳, מרת) standard, optional, or family-specific?
-- [ ] Is the English side of the stone part of the same order, or separate?
+### A3. Character set limits
+- [ ] The table has **no Yiddish diacritics and no nikud**. Confirm this is
+      really all that is available — is there a second sheet, or an
+      "additional characters" process for names that need אַ, פֿ, etc.?
+- [ ] What is the fallback when a name cannot be spelled with these 31 codes?
 
 ---
 
 ## B. Product scope
 
-- [ ] Who is the actual user — funeral home staff, cemetery office staff, or
-      the bereaved family directly? This changes the entire UX and the
-      Hebrew-literacy assumption.
-- [ ] Is the output a **printable form matching the cemetery's sheet**, a
-      file they upload, or something transmitted directly?
-- [ ] Does the cemetery need to agree to this, or does it produce their
-      existing sheet so well that no agreement is needed? (The second is far
-      easier to ship.)
-- [ ] Does a record need to persist — reopened, amended, reprinted — or is
-      each session one-shot?
-- [ ] Multiple names on one stone (spouses, family monuments)?
+- [ ] **Which of the two moments do we build first** — filling the form, or
+      checking the returned proof? Checking is the smaller build and guards
+      the last step before granite is cut.
+- [ ] Output format: a filled printable form matching the vendor's layout, or
+      a number sequence the family copies by hand into the paper form?
+- [ ] Does the cemetery or Eagle Granite need to agree to this, or does it
+      simply produce their existing form well enough that nothing changes on
+      their side? (The second is far easier to ship.)
+- [ ] Multiple decedents on one monument — the observed proof had two. Is that
+      one form or two?
+- [ ] Does a record need to persist and be reopened, or is each session
+      one-shot?
 
 ## C. Correctness governance
 
-- [ ] Who is the rabbinic authority for review? The generated Hebrew needs
-      review by someone qualified before the first real stone is ordered.
-- [ ] What is the policy when time of death is unknown? (Likely the most
-      frequent real-world case.)
-- [ ] Do we need a curated English → Hebrew name suggestion table, and who
+- [ ] Who is the rabbinic authority for review? Needed before the first real
+      stone, and needed to settle A1.
+- [ ] Policy when time of death is unknown — likely the most common real case,
+      and unanswerable by software (see `hebrew-inscriptions.md` §2.1).
+- [ ] Curated English → Hebrew name suggestion table: do we need one, and who
       vets it?
 
 ## D. Legal and privacy
 
-- [ ] Deceased-person records with family contact details — what retention
-      and access policy applies? This is not HIPAA, but it is sensitive and
-      the community is small.
-- [ ] Any agreement needed with the cemetery before using their form layout?
+- [ ] Retention and access policy for records of the deceased and family
+      contact details. Not HIPAA, but sensitive, and the community is small.
+- [ ] Is reproducing the vendor's form layout acceptable to them?
+- [ ] **Settled for now:** real forms and proofs are excluded from version
+      control via `.gitignore`. See `samples/README.md`.
 
 ---
 
 ## E. Technical decisions — deliberately unmade
 
-Not blocking; will be settled once scope above is clearer. Recorded as
-Architecture Decision Records in `docs/decisions/` when decided.
+Recorded as ADRs in `docs/decisions/` when decided.
 
 - [ ] Language and runtime
 - [ ] Web framework and rendering approach
-- [ ] Persistence — whether any is needed at all for v1
-- [ ] Hebrew typeface for on-screen preview (must be licensed for the use)
-- [ ] PDF generation approach for the printable form
+- [ ] Persistence — whether any is needed for v1
+- [ ] Hebrew typeface for preview. The proof names `HEBREW TDS`; we will not
+      have it, so preview fidelity is approximate. Decide how close is close
+      enough, and license whatever we do use.
+- [ ] PDF generation for the printable form
 - [ ] Hosting
