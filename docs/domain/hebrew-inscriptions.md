@@ -29,6 +29,7 @@ Usual line order, top to bottom:
 |---|---|---|
 | פ״נ | פה נקבר / פה נקברה | "here lies buried" |
 | פ״ט | פה טמון / פה טמונה | alternative opening |
+| נ״פ | probably נפטר / נפטרה ("died") | introduces the date line. **Confirmed correct in use**; the expansion is inferred, not verified — see `eagle-granite-form.md` §4.1 |
 | תנצב״ה | תהא נפשו/נפשה צרורה בצרור החיים | from 1 Samuel 25:29; some traditions use נשמתו |
 | ז״ל | זכרונו / זכרונה לברכה | |
 | ע״ה | עליו / עליה השלום | |
@@ -201,11 +202,25 @@ to be able to say precisely what was shown to whom, and when.
 
 ---
 
+## 5a. `פ״נ` and `נ״פ` are mirror images and both are correct
+
+Both appear on a single stone: `פ״נ` opens it, `נ״פ` introduces the date.
+They are the same two characters reversed.
+
+So a transposition produces valid Hebrew and **cannot be detected by
+validating the text alone** — only by position. Validate structurally, and
+always show the decoded Hebrew back to the user rather than letting a number
+sequence stand as the only representation. See `eagle-granite-form.md` §4.2.
+
+---
+
 ## 6. Things this system must never do silently
 
 - Pick a Hebrew date when time of death is unknown
 - Resolve a *bein hashmashot* case
 - Derive a Hebrew name from an English name
+- Constrain a name to a list of known Hebrew names — patronymics are often
+  transliterated Russian or Yiddish given names that appear in no such list
 - Emit a numeric code for a character not in the confirmed table
 - Produce 15 or 16 by place-value gematria
 - Apply gender per-line rather than per-record

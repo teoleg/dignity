@@ -23,9 +23,11 @@ Headlines:
 ## A. Blocking — needs the cemetery, the vendor, or a rabbi
 
 ### A1. The two style anomalies on the proof
-- [ ] Is `נ״פ` on the death line the intended abbreviation of נפטר/נפטרה, or
-      a right-to-left transposition of `פ״נ`? **Do not reproduce until
-      confirmed** — codifying an error would make every future stone wrong.
+- [x] ~~Is `נ״פ` a transposition of `פ״נ`?~~ **No — confirmed correct house
+      style** against a known-good reference. Reproduce it.
+- [ ] What does `נ״פ` expand to? Almost certainly `נפטר`/`נפטרה` ("died").
+      Affects only the English back-translation shown to families, not the
+      engraving. Label that line's translation provisional until answered.
 - [ ] Is `ת'נ'צ'ב'ה'` (geresh after each letter) house style, or an artifact
       of the encoding? Classical form is `תנצב״ה`.
 

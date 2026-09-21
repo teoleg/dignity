@@ -196,41 +196,59 @@ Confirmed style points:
 - Month names appear in their standard short forms.
 - Gender agreement correct on the observed sample: בת with a woman, בן with
   a man.
+- **A patronymic may be a non-Hebrew name transliterated into Hebrew
+  letters.** The reference inscription's father's name is a Russian given
+  name written in Hebrew characters — the kind common in Soviet-immigrant
+  families, and one that appears in no table of Hebrew or biblical names.
+  Product consequence: name entry must accept **free Hebrew text**, validated
+  only against the form's character table. A dropdown or autocomplete of
+  traditional names would silently fail exactly the families this tool is
+  for. Suggestions may assist; they must never constrain.
 - Day-of-month gematria punctuation was **correct** on both lines observed:
   a single letter took a geresh (ה׳), two letters took gershayim before the
   last (י״ג). This matches the convention documented in
   `hebrew-inscriptions.md` §2.3.
 
-### 4.1 Two anomalies to resolve before trusting the style
+### 4.1 Style points — one resolved, one open
 
-**(a) The closing line was rendered `ת'נ'צ'ב'ה'`** — a geresh after every
-letter — rather than the classical `תנצב״ה` (gershayim before the final
-letter). Is this house style, or an artifact of someone reaching for code 30
-repeatedly because it was the easiest thing on the table? Needs a decision:
-we can reproduce either, but we should do it deliberately.
+**RESOLVED — the death-line `נ״פ` is correct, not a transposition.** Confirmed
+by the project owner against a known-good reference inscription. It is
+intentional house style and must be reproduced.
 
-**(b) The death line began `נ״פ`.** Two readings:
+Its expansion is **probably** `נפטר` ("died"), which fits both its position
+immediately before the date and the normal two-letter abbreviation rule
+(gershayim before the final letter, as in `ז״ל`, `ע״ה`). A stone would not
+say "here lies buried" twice.
 
-- Legitimate: an abbreviation of נפטר / נפטרה ("died"), with the gershayim in
-  the conventional position before the final letter.
-- A **reversal error**: `פ״נ` and `נ״פ` are the same two characters in
-  opposite order. Entering that pair backwards is exactly the right-to-left
-  failure this form invites.
+This matters only for the **English back-translation** feature, not for the
+engraving: we must not tell a family that both lines mean the same thing.
+Worth one confirmation with the cemetery or a rabbi. Until then, label the
+back-translation of this line as provisional in the UI.
 
-It appeared consistently on both decedents while line 1 correctly read פ״נ,
-which argues for the first reading. **But this must be confirmed with the
-cemetery or a rabbi before we reproduce it**, because if it is an error we
-would be codifying a mistake into every stone the tool produces.
+**STILL OPEN — the closing formula.** The observed proof rendered it
+`ת'נ'צ'ב'ה'`, a geresh after every letter, rather than the classical
+`תנצב״ה`. Not covered by the reference inscription. Still needs an answer
+before we reproduce it.
 
-### 4.2 Why (b) matters beyond this one case
+### 4.2 Mirror-image abbreviations — a structural hazard
 
-A reversed two-letter abbreviation still looks like plausible Hebrew. The
-form's direction instruction protects a careful reader, nothing else does.
-Design implication: **the tool should render the numbers back into Hebrew and
-show the user that rendering**, so a transposition is visible as nonsense
-rather than hidden in a row of digits.
+A single stone carries **`פ״נ` and `נ״פ`: the same two characters in opposite
+order, both correct.**
 
----
+The consequence is sharp. A transposition of either one produces the other,
+and the other is valid Hebrew. So a reversal **cannot be caught by any
+"is this valid?" check on the text alone.** It is detectable only by
+position: `פ״נ` opens the inscription, `נ״פ` introduces the date.
+
+Two requirements follow:
+
+1. **Validate structurally, not just lexically.** The composer should know
+   which abbreviation belongs on which line and reject the other there,
+   rather than accepting any well-formed Hebrew.
+2. **Always render the codes back into Hebrew and show it.** A digit
+   transposition in a row of numbers is invisible; the same error rendered as
+   text puts `נ״פ` where the reader expects `פ״נ`. This is the argument for
+   the decode step being part of the UI, not just a test.
 
 ## 5. Date handling — verified against the proof, documented with synthetic data
 
