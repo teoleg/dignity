@@ -179,6 +179,39 @@ Design notes that are easy to undo by accident:
 - `possibleDrift` is a hint, not a verdict. Never present it as a correctness
   judgement.
 
+## Scope discipline — read this before proposing anything
+
+**The only goal right now is: can a dialogue with one family produce correct
+output?** Names and dates in, correct Hebrew and a correctly filled form out.
+Nothing else is in scope.
+
+Explicitly NOT now, however sensible they sound:
+
+- accounts, logins, roles, staff consoles
+- lists of other orders, handoff between workers, multi-tenancy
+- sessions, persistence, magic links, retention jobs
+- scaling, caching, queues, background work
+
+A worker using this alongside a family operates the family's own session.
+That is all. It needs nothing built for it.
+
+ADRs 0002 and 0003 describe an eventual shape. **They are not a build list.**
+Do not implement ahead of them.
+
+Rules that follow:
+
+- Prefer the smallest change that tests whether the output is correct.
+- Do not write an ADR for a decision nobody is making yet. The ADR log is for
+  choices already taken, not options surveyed.
+- Do not ask the user to settle a question that does not block correct
+  output. Pick the obvious default, say so in one line, move on.
+- When a requirement could be read two ways and both produce correct output,
+  take the simpler one.
+
+Correctness of the inscription is still the thing that cannot be traded away
+— see the priority ordering above. Simplicity applies to everything *around*
+it, not to the Hebrew.
+
 ## What to do next
 
 The order form and a real proof have been read. The character table, fill
