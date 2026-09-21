@@ -116,6 +116,10 @@ The short version of the hard parts:
 - **Canonical Unicode Hebrew is the source of truth**; the numeric code is a
   render target produced by a pure, table-driven, round-trip-tested function.
 - **Gender is one field per record**, and every derived string reads from it.
+- **The user does not read Hebrew** (ADR 0005). Never show Hebrew alone —
+  always with how it sounds and what it means. The pronunciation is the
+  verification mechanism, and it must be re-transliterated per interface
+  language.
 
 ---
 
@@ -168,6 +172,7 @@ docs/decisions/         architecture decision records
   0002-stack-and-platform.md
   0003-access-and-retention.md
   0004-render-by-overlaying-the-vendor-blank.md
+  0005-english-first-chat-led-interface.md
 docs/open-questions.md  what we don't know yet
 samples/                LOCAL ONLY — gitignored, never committed
 ```
