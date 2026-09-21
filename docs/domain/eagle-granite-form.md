@@ -215,15 +215,29 @@ Confirmed style points:
 by the project owner against a known-good reference inscription. It is
 intentional house style and must be reproduced.
 
-Its expansion is **probably** `נפטר` ("died"), which fits both its position
-immediately before the date and the normal two-letter abbreviation rule
-(gershayim before the final letter, as in `ז״ל`, `ע״ה`). A stone would not
-say "here lies buried" twice.
+**Its meaning is confirmed: `נ״פ` means "died"** (`נפטר` / `נפטרה`). Confirmed
+by the project owner. It fits its position immediately before the date and
+the normal two-letter abbreviation rule (gershayim before the final letter,
+as in `ז״ל`, `ע״ה`).
 
-This matters only for the **English back-translation** feature, not for the
-engraving: we must not tell a family that both lines mean the same thing.
-Worth one confirmation with the cemetery or a rabbi. Until then, label the
-back-translation of this line as provisional in the UI.
+Note the abbreviation is **written identically for either gender**, like
+`פ״נ` — only the spelled-out form differs (`נפטר` / `נפטרה`). If the tool
+ever offers an unabbreviated variant, gender agreement applies there.
+
+### Confirmed back-translation template
+
+Both abbreviations are now settled, so the English gloss shown to families is
+no longer provisional:
+
+| Hebrew line | English |
+|---|---|
+| `פ״נ` | Here lies buried |
+| `[name] בן / בת [father's name]` | [name], son / daughter of [father] |
+| `נ״פ [day] [month] [year]` | Died [day] [month] [year] |
+| closing formula | *(pending — see below)* |
+
+This template is the back-translation feature. A family who reads no Hebrew
+sees exactly this beside the inscription before they approve anything.
 
 **STILL OPEN — the closing formula.** The observed proof rendered it
 `ת'נ'צ'ב'ה'`, a geresh after every letter, rather than the classical

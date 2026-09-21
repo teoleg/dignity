@@ -29,7 +29,7 @@ Usual line order, top to bottom:
 |---|---|---|
 | פ״נ | פה נקבר / פה נקברה | "here lies buried" |
 | פ״ט | פה טמון / פה טמונה | alternative opening |
-| נ״פ | probably נפטר / נפטרה ("died") | introduces the date line. **Confirmed correct in use**; the expansion is inferred, not verified — see `eagle-granite-form.md` §4.1 |
+| נ״פ | נפטר / נפטרה — "died" | **Confirmed.** Introduces the date line. Written the same for either gender; only the spelled-out form differs |
 | תנצב״ה | תהא נפשו/נפשה צרורה בצרור החיים | from 1 Samuel 25:29; some traditions use נשמתו |
 | ז״ל | זכרונו / זכרונה לברכה | |
 | ע״ה | עליו / עליה השלום | |
