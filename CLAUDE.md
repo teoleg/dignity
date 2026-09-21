@@ -35,11 +35,13 @@ model:
   through the viewer's own account, so no key and no hosting. Requires every
   viewer to be signed in to Claude.
 
-`public/blank-form.jpg` and `public/app.js` are gitignored: the first is the
-vendor's artwork, the second is build output. A deployment without the blank
-still runs the dialogue; the page asks a viewer for the image the first time
-someone wants the filled form, and keeps it in their browser. That is what
-makes a phone-only deploy possible.
+`public/blank-form.jpg` is the vendor's blank order sheet and **is
+committed**, so every deployment can fill a form without asking anyone for
+anything. It carries no personal data — empty boxes, the character chart, and
+Eagle Granite's and the cemetery's own pre-printed details. `public/app.js`
+is build output and stays gitignored. If the deployment is ever missing the
+blank, the page falls back to asking a viewer for a photo of theirs and keeps
+it in their browser.
 
 Everything in `docs/decisions/` beyond ADR 0002 describes work not yet built.
 Treat the ADRs as intent; treat `src/` as fact, and update this file when
@@ -196,9 +198,10 @@ Design notes that are easy to undo by accident:
   rows of twenty-eight with an even pitch. A grid that is nearly right is the
   dangerous case — every number lands in the wrong box and nothing looks
   wrong — so "nearly" is rejected too.
-- **The blank is a runtime asset, never committed.** `renderForm` takes it as
-  an argument. In production it is stored per `order.form_revision`, so a
-  revised form is a new asset rather than a code change.
+- **`renderForm` takes the blank as an argument**, never reads it from a
+  fixed path. The deployment ships one, but the library has no opinion about
+  where it came from — in production it is stored per `order.form_revision`,
+  so a revised form is a new asset rather than a code change.
 - `prepareBlank`'s scan cleaning only touches pixels that are light *and*
   unsaturated, so it cannot erase a rule the detector needs.
 - **Translation output is never repaired, only rejected** (ADR 0006). No
@@ -233,10 +236,11 @@ Design notes that are easy to undo by accident:
   every version they saved — a PDF on a phone goes somewhere less obvious.
   The page also leaves the picture on screen, because pressing and holding it
   is the one route to the photo library that works without any permission.
-- **The blank order sheet never comes from this repository.** It is the
-  vendor's artwork and is not committed; a viewer supplies a photo of theirs
-  once per device. `pickBlank` explains what is wanted before the file
-  picker opens — "choose a file" with no explanation was not understood.
+- **Nobody is asked for the blank order sheet.** The app ships with it. The
+  picker is only a fallback for a deployment that lacks one, and it explains
+  what it wants before it opens — "choose a file" with no explanation was not
+  understood, and asking at all was the wrong question to put to a grieving
+  family.
 
 ## Scope discipline — read this before proposing anything
 
