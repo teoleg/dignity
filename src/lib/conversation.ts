@@ -1,5 +1,10 @@
 /**
- * The dialogue.
+ * The dialogue — everything except the transport.
+ *
+ * No SDK import, no network: this module is what the browser bundle and the
+ * server share. A driver (`conversation-claude.ts` on a server, the artifact
+ * page in a browser) obtains a turn from the model and hands it to
+ * `applyTurn`. See conversation-claude.ts.
  *
  * A model drives the conversation: it reads what the family wrote in plain
  * English, works out what it now knows, and asks for whatever is still
@@ -20,8 +25,6 @@
  */
 
 import { z } from "zod";
-import Anthropic from "@anthropic-ai/sdk";
-import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { BOXES_PER_LINE, encodeLine } from "./form-table.js";
 import { hebrewDateOfDeath, type TimeOfDeath } from "./hebrew-date.js";
 import {
@@ -34,8 +37,6 @@ import {
   type Gender,
   type Line,
 } from "./inscription.js";
-
-const MODEL = "claude-opus-5";
 
 /** Everything the conversation has established so far. */
 export interface Draft {
@@ -104,7 +105,7 @@ vowel points, NO cantillation, NO shin/sin dot, and NONE of the Yiddish
 diacritics (אַ אָ בֿ פֿ ױ ײ). Anything using those cannot be engraved at all.
 Each line holds ${BOXES_PER_LINE} characters including spaces.`.trim();
 
-const SYSTEM = `
+export const SYSTEM = `
 You are helping a bereaved family order a Jewish monument. You talk to them
 in plain English; they do not read Hebrew. You write the Hebrew.
 
@@ -148,61 +149,27 @@ HARD RULES:
 - If you cannot render something honestly within the constraints, say so
   rather than offering something approximate. This is carved in stone.`.trim();
 
-export interface ConversationOptions {
-  client?: Anthropic;
-  model?: string;
-}
-
-export class Conversation {
-  private readonly client: Anthropic;
-  private readonly model: string;
-
-  constructor(opts: ConversationOptions = {}) {
-    this.client = opts.client ?? new Anthropic();
-    this.model = opts.model ?? MODEL;
-  }
-
-  /**
-   * Advance the dialogue by one exchange.
-   *
-   * Returns the reply to show, the updated draft, and the inscription as the
-   * deterministic library sees it — which is the only version that counts.
-   */
-  async advance(history: readonly Message[], draft: Draft): Promise<Turn> {
-    const res = await this.client.messages.parse({
-      model: this.model,
-      max_tokens: 4000,
-      thinking: { type: "adaptive" },
-      system: SYSTEM,
-      messages: [
-        {
-          role: "user",
-          content:
-            `Known so far (JSON): ${JSON.stringify(stripHebrew(draft))}\n\n` +
-            `Conversation:\n` +
-            history.map((m) => `${m.role === "user" ? "Family" : "You"}: ${m.content}`).join("\n"),
-        },
-      ],
-      output_config: { format: zodOutputFormat(TurnSchema) },
-    });
-
-    const parsed = res.parsed_output;
-    if (!parsed) {
-      return { reply: "Sorry — could you say that again?", draft, rejected: [], ...derive(draft) };
-    }
-    return { reply: parsed.reply, ...applyTurn(draft, parsed) };
-  }
-}
-
-/** The model does not need the Hebrew it already proposed echoed back. */
-function stripHebrew(d: Draft): Record<string, unknown> {
+/**
+ * Build the user turn both drivers send. Kept here so the browser and the
+ * server ask the model exactly the same thing.
+ */
+export function describeDraft(d: Draft): string {
   const { hebrewGiven, hebrewFather, extra, ...rest } = d;
-  return {
+  return JSON.stringify({
     ...rest,
     hasHebrewName: Boolean(hebrewGiven),
     hasHebrewFather: Boolean(hebrewFather),
     hasExtraLine: Boolean(extra),
-  };
+  });
+}
+
+export function transcript(history: readonly Message[]): string {
+  return history.map((m) => `${m.role === "user" ? "Family" : "You"}: ${m.content}`).join("\n");
+}
+
+/** The prompt body: what is known, then the conversation. */
+export function promptFor(draft: Draft, history: readonly Message[]): string {
+  return `Known so far (JSON): ${describeDraft(draft)}\n\nConversation:\n${transcript(history)}`;
 }
 
 export type ParsedTurn = z.infer<typeof TurnSchema>;

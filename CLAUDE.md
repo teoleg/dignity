@@ -21,7 +21,14 @@ application around it yet — no Next.js app, no database, no UI.
 npm test          # vitest, 111 tests
 npm run typecheck # tsc --noEmit, strict
 npx tsx scripts/render-sample.ts <blank-image> out.pdf
+npm run build:web  # bundle src/browser for an artifact page
 ```
+
+**A prototype is published as a claude.ai artifact.** It runs the real
+dialogue through the viewer's own Claude account (the `sample` capability),
+so it needs no API key and no hosting. The blank form is embedded in that
+page as a data URI — the page is private, but it is still vendor artwork
+kept out of this repo.
 
 Everything in `docs/decisions/` beyond ADR 0002 describes work not yet built.
 Treat the ADRs as intent; treat `src/` as fact, and update this file when
@@ -150,7 +157,11 @@ The short version of the hard parts:
 | `src/lib/form-render.ts` | Draws the numbers onto the vendor's blank, out as PDF |
 | `src/lib/translation.ts` | Vets model output; independent back-translation (ADR 0006) |
 | `src/lib/translation-claude.ts` | Claude adapter — **not yet run against the live API** |
-| `src/lib/conversation.ts` | Model-driven dialogue; extracts facts, proposes Hebrew |
+| `src/lib/conversation.ts` | Model-driven dialogue — logic only, **no SDK import** |
+| `src/lib/conversation-claude.ts` | Server driver: the Anthropic SDK |
+| `src/browser/ask-claude.ts` | Browser driver: the artifact `sample` capability |
+| `src/browser/render-browser.ts` | Canvas + pdf-lib twin of `form-render.ts` |
+| `src/browser/main.ts` | The artifact page |
 
 Design notes that are easy to undo by accident:
 
@@ -191,6 +202,18 @@ Design notes that are easy to undo by accident:
   library derives it from the Gregorian date and the time of death. Anything
   the model writes in Hebrew letters for a date would be wrong.
 - `derive()` decides whether an inscription is finished, not the model.
+- **`conversation.ts` must never import the SDK.** It is shared by the server
+  and the browser bundle; a driver moves a turn across the wire and hands it
+  to `applyTurn`. Both drivers build the prompt with `promptFor`, so the
+  model is asked exactly the same thing either way.
+- **`sample` has no system prompt and no schema enforcement.** The browser
+  driver puts the instructions in a leading user turn and validates the reply
+  against the same zod schema before anything reaches `applyTurn` — an
+  unparseable turn is a failed turn, never a partially applied one.
+- **`form-grid.ts` runs unchanged in the browser.** It takes greyscale bytes,
+  which canvas produces. Only decoding and drawing differ between
+  `form-render.ts` (sharp) and `render-browser.ts` (canvas + pdf-lib); the
+  detection and placement are the same tested code.
 
 ## Scope discipline — read this before proposing anything
 
@@ -267,7 +290,8 @@ the images, and do not put real names or dates into committed files.
 CLAUDE.md               this file
 package.json            npm test · npm run typecheck
 src/lib/                the tested core — see "What is built"
-src/lib/__tests__/      96 tests
+src/lib/__tests__/      111 tests
+src/browser/            browser bundle for the artifact page
 scripts/render-sample.ts  dev utility: fill a blank and write a PDF
 docs/domain/
   hebrew-inscriptions.md  Hebrew, calendar, gematria, naming

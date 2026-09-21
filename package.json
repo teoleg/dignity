@@ -5,7 +5,8 @@
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build:web": "esbuild src/browser/main.ts --bundle --format=iife --platform=browser --target=es2022 --minify --outfile=dist/web/bundle.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.127.0",
@@ -16,6 +17,7 @@
   },
   "devDependencies": {
     "@types/node": "^26.6.2",
+    "esbuild": "^0.28.2",
     "tsx": "^4.23.15",
     "typescript": "^5.6.0",
     "vitest": "^2.1.0"
