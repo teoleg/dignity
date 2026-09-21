@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dignity Monument Composer</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;500;700&family=IBM+Plex+Sans:wght@400;450;500;600&family=Cormorant+Garamond:wght@500;600&display=swap">
+<style>
+:root{
+  --ground:#F2F4F6;--surface:#FFFFFF;--surface-2:#E9EDF0;
+  --ink:#1B2127;--ink-2:#4A5763;--ink-3:#77848F;
+  --rule:#D7DDE2;--rule-2:#C3CBD2;
+  --accent:#35536E;--accent-soft:#E2EAF1;--accent-ink:#284259;
+  --flag:#8A5A12;--flag-soft:#F7EFE0;--stop:#8A3A38;--stop-soft:#F8E7E6;
+  --ok:#3D6152;--box:#FDFDFD;--box-rule:#B9C2C9;--btn-ink:#FFFFFF;--tap:48px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --ground:#0E1216;--surface:#171D23;--surface-2:#1F272E;
+  --ink:#E7ECF0;--ink-2:#A9B6C1;--ink-3:#7C8994;
+  --rule:#2A333B;--rule-2:#3A454E;
+  --accent:#8FB4D4;--accent-soft:#1E2B37;--accent-ink:#B9D2E8;
+  --flag:#D8A657;--flag-soft:#2A2214;--stop:#D98E8B;--stop-soft:#2E1A19;
+  --ok:#7FB79E;--box:#141A20;--box-rule:#414C55;--btn-ink:#0E1216;
+}}
+:root[data-theme="dark"]{
+  --ground:#0E1216;--surface:#171D23;--surface-2:#1F272E;
+  --ink:#E7ECF0;--ink-2:#A9B6C1;--ink-3:#7C8994;
+  --rule:#2A333B;--rule-2:#3A454E;
+  --accent:#8FB4D4;--accent-soft:#1E2B37;--accent-ink:#B9D2E8;
+  --flag:#D8A657;--flag-soft:#2A2214;--stop:#D98E8B;--stop-soft:#2E1A19;
+  --ok:#7FB79E;--box:#141A20;--box-rule:#414C55;--btn-ink:#0E1216;
+}
+*{box-sizing:border-box}html,body{height:100%}
+body{margin:0;background:var(--ground);color:var(--ink);
+ font-family:"IBM Plex Sans",ui-sans-serif,system-ui,sans-serif;font-size:16px;line-height:1.5;
+ -webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%}
+.heb{font-family:"Frank Ruhl Libre","Times New Roman",serif;direction:rtl;unicode-bidi:isolate}
+
+.app{height:100%;display:flex;flex-direction:column;min-height:0}
+.top{flex:none;background:var(--surface);border-bottom:1px solid var(--rule);
+ padding:10px 16px;padding-top:calc(10px + env(safe-area-inset-top,0px))}
+.topline{display:flex;align-items:center;gap:10px}
+.wordmark{font-family:"Frank Ruhl Libre",serif;font-size:18px;font-weight:700}
+.topline .spacer{flex:1}
+.pill{font-size:11px;letter-spacing:.05em;text-transform:uppercase;font-weight:600;
+ padding:4px 9px;border-radius:99px;background:var(--flag-soft);color:var(--flag)}
+.link{font:inherit;font-size:13px;background:none;border:0;color:var(--accent);cursor:pointer;
+ min-height:36px;padding:0 4px}
+
+.peek{display:flex;gap:12px;align-items:center;width:100%;margin-top:10px;background:none;border:0;
+ padding:0;font:inherit;color:inherit;cursor:pointer;text-align:left}
+.peekstone{flex:none;width:92px;padding:14px 8px 10px;
+ clip-path:polygon(0 11%,50% 0,100% 11%,100% 100%,0 100%);
+ background:radial-gradient(120% 90% at 30% 10%,#6E757D 0,transparent 60%),
+  linear-gradient(170deg,#666D75 0,#545B63 45%,#464C53 100%);color:#F2F5F6;text-align:center}
+.peekstone .hl{font-family:"Frank Ruhl Libre",serif;direction:rtl;unicode-bidi:isolate;font-size:9px;line-height:1.55}
+.peekstone .hl .flag{color:#E8C079}
+.peekstone .none{font-size:8px;color:#AEB6BD;font-family:"IBM Plex Sans",sans-serif;padding:8px 0}
+.peekwords{flex:1;min-width:0}
+.peekwords b{display:block;font-size:14px;font-weight:600}
+.peekwords span{display:block;font-size:13px;color:var(--ink-3);margin-top:2px}
+.peekwords .go{color:var(--accent);font-weight:500}
+
+.log{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 16px 6px;
+ display:flex;flex-direction:column;gap:12px;min-height:0}
+.msg{max-width:88%}.msg.you{align-self:flex-end}
+.bubble{background:var(--surface);border:1px solid var(--rule);padding:11px 13px;border-radius:12px 12px 12px 3px}
+.msg.you .bubble{background:var(--accent-soft);border-color:transparent;color:var(--accent-ink);border-radius:12px 12px 3px 12px}
+.bubble p{margin:0 0 8px}.bubble p:last-child{margin-bottom:0}
+.bubble .hint{color:var(--ink-3);font-size:14px}
+.bubble .err{color:var(--stop);font-size:14.5px}
+
+.foot{flex:none;background:var(--surface);border-top:1px solid var(--rule);
+ padding:9px 12px;padding-bottom:calc(9px + env(safe-area-inset-bottom,0px))}
+.checkbar{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.ck{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ink-3);flex:1;min-width:0}
+.ck::before{content:"";width:8px;height:8px;border-radius:50%;flex:none;background:var(--rule-2)}
+.ck.open::before{background:var(--flag)}.ck.done::before{background:var(--ok)}
+.composer{display:flex;gap:8px}
+.composer input{flex:1;min-width:0;font:inherit;font-size:16px;color:var(--ink);background:var(--ground);
+ border:1px solid var(--rule-2);border-radius:9px;padding:0 13px;height:var(--tap)}
+.composer input:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.btn{font:inherit;font-weight:500;cursor:pointer;border:0;border-radius:9px;height:var(--tap);
+ padding:0 18px;background:var(--accent);color:var(--btn-ink);flex:none}
+.btn[disabled]{background:var(--surface-2);color:var(--ink-3);cursor:not-allowed}
+.btn.wide{width:100%;margin-top:18px}
+.btn.ghost{background:var(--surface);color:var(--ink);border:1px solid var(--rule-2);padding:0 12px;font-size:14px}
+
+.sheet{position:fixed;inset:0;background:var(--ground);z-index:20;display:flex;flex-direction:column;
+ padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.sheet[hidden]{display:none}
+.sheethead{flex:none;display:flex;align-items:center;gap:10px;padding:10px 12px;
+ border-bottom:1px solid var(--rule);background:var(--surface)}
+.sheethead h2{margin:0;font-size:15px;font-weight:600;flex:1}
+.sheetbody{flex:1;overflow-y:auto;padding:16px}
+.close{font:inherit;background:none;border:0;color:var(--accent);cursor:pointer;min-height:var(--tap);padding:0 8px;font-weight:500}
+
+.bigstone{max-width:340px;margin:0 auto;padding:30px 22px 24px;
+ clip-path:polygon(0 11%,50% 0,100% 11%,100% 100%,0 100%);
+ background:radial-gradient(120% 90% at 30% 10%,#6E757D 0,transparent 60%),
+  linear-gradient(170deg,#666D75 0,#545B63 45%,#464C53 100%);
+ color:#EEF1F3;text-align:center;box-shadow:0 10px 26px rgba(20,24,28,.34)}
+.bigstone .fam{font-family:"Cormorant Garamond",Georgia,serif;font-size:26px;font-weight:600;letter-spacing:.13em;margin:14px 0}
+.bigstone .hl{font-family:"Frank Ruhl Libre",serif;direction:rtl;unicode-bidi:isolate;font-size:26px;line-height:1.85}
+.bigstone .hl .flag{color:#E8C079}
+.bigstone .given{font-family:"Cormorant Garamond",Georgia,serif;font-size:21px;letter-spacing:.09em;margin-top:14px}
+.bigstone .yrs{font-family:"Cormorant Garamond",Georgia,serif;font-size:14px;letter-spacing:.05em;margin-top:4px;color:#D6DCE1}
+.handover{margin:16px auto 0;max-width:420px;color:var(--ink-2);font-size:14.5px;text-align:center}
+
+.lineitem{background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:12px 13px;margin-bottom:10px}
+.lineitem .heb{font-size:26px;display:block;text-align:right;line-height:1.35}
+.lineitem .en{display:block;margin-top:7px;font-size:15.5px}
+.say{color:var(--accent-ink);font-size:14px;margin-top:3px}
+:root[data-theme="dark"] .say,:root:not([data-theme="light"]) .say{color:var(--accent)}
+.blockline{color:var(--flag);font-size:13.5px;margin-top:6px}
+.meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:center}
+.tag{font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;font-weight:600;padding:3px 7px;border-radius:4px}
+.tag.fam{background:var(--accent-soft);color:var(--accent-ink)}
+.tag.gen{background:var(--surface-2);color:var(--ink-3)}
+.count{font-size:12.5px;color:var(--ink-3)}
+.cap{font-size:14px;color:var(--ink-2);margin:4px 0 14px}
+.blocklist{margin:0 0 14px;padding-left:20px;color:var(--flag);font-size:14px}
+.blocklist li{margin-bottom:4px}
+.sub{font-size:13px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-3);margin:20px 0 8px}
+
+.formscroll{overflow-x:auto;-webkit-overflow-scrolling:touch;background:var(--box);
+ border:1px solid var(--rule);border-radius:8px;padding:10px}
+.formwide{min-width:620px}
+.rowlab{font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-3);font-weight:600;text-align:right;margin:0 2px 3px}
+.boxes{display:grid;grid-template-columns:repeat(28,1fr);margin-bottom:9px}
+.bx{aspect-ratio:1/1.18;border:1px solid var(--box-rule);margin-left:-1px;display:grid;place-items:center;
+ font-size:10px;font-weight:500;font-variant-numeric:tabular-nums}
+.bx:first-child{margin-left:0}
+.bx.set{background:var(--accent-soft);color:var(--accent-ink)}
+.swipe{font-size:13px;color:var(--ink-3);margin:8px 0 0}
+
+@media (min-width:880px){
+  .app{max-width:1280px;margin:0 auto;padding:0 20px}
+  .top{background:none;padding-inline:0}
+  .peek{display:none}
+  .split{flex:1;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.95fr);gap:18px;padding-block:16px;min-height:0}
+  .col{background:var(--surface);border:1px solid var(--rule);border-radius:10px;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+  .foot{background:none;padding-inline:12px}
+  .sheet.aspane{position:static;inset:auto;z-index:auto;padding:0}
+  .formwide{min-width:0}
+}
+@media (max-width:879px){ .split{display:contents} .col{display:contents} .deskonly{display:none} }
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* passcode gate */
+.gate{position:fixed;inset:0;z-index:40;background:var(--ground);display:grid;place-items:center;padding:24px}
+.gate[hidden]{display:none}
+.gatecard{max-width:360px;width:100%;background:var(--surface);border:1px solid var(--rule);
+ border-radius:12px;padding:22px}
+.gatecard h1{font-family:"Frank Ruhl Libre",serif;font-size:22px;margin:0 0 6px}
+.gatecard p{color:var(--ink-2);font-size:14.5px;margin:0 0 16px}
+.gatecard input{width:100%;font:inherit;font-size:16px;height:var(--tap);padding:0 13px;
+ border:1px solid var(--rule-2);border-radius:9px;background:var(--ground);color:var(--ink);margin-bottom:10px}
+</style>
+</head>
+<body>
+
+<div class="gate" id="gate" hidden>
+  <form class="gatecard" id="gateform">
+    <h1>Dignity</h1>
+    <p>Enter the code you were given to try the monument inscription tool.</p>
+    <input id="gatepass" type="password" autocomplete="off" placeholder="Code" autofocus>
+    <button class="btn wide" style="margin-top:0" type="submit">Continue</button>
+  </form>
+</div>
+
+<div class="app">
+  <header class="top">
+    <div class="topline">
+      <span class="wordmark">Dignity</span>
+      <span class="spacer"></span>
+      <button class="link" id="restart" type="button">Start over</button>
+      <span class="pill" id="pill">Draft</span>
+    </div>
+    <button class="peek" id="peek" type="button">
+      <span class="peekstone"><span class="hl" id="peek-lines"></span></span>
+      <span class="peekwords">
+        <b id="peek-title">The stone</b>
+        <span id="peek-sub">It appears here as you answer.</span>
+        <span class="go">Tap to see it full size &rarr;</span>
+      </span>
+    </button>
+  </header>
+
+  <div class="split">
+    <section class="col">
+      <div class="log" id="log"></div>
+      <div class="foot">
+        <div class="checkbar">
+          <span class="ck" id="ck-blockers">Not started</span>
+          <button class="btn ghost" id="openchecks" type="button">Check lines</button>
+        </div>
+        <form class="composer" id="composer">
+          <input id="entry" autocomplete="off" placeholder="Type your answer…" disabled>
+          <button class="btn" type="submit" id="sendbtn" disabled>Send</button>
+        </form>
+      </div>
+    </section>
+    <section class="col deskonly" id="deskpane" hidden></section>
+  </div>
+</div>
+
+<div class="sheet" id="sheet-stone" hidden>
+  <div class="sheethead">
+    <h2>The stone, as it will be carved</h2>
+    <button class="close" data-close="sheet-stone" type="button">Done</button>
+  </div>
+  <div class="sheetbody">
+    <div class="bigstone">
+      <div class="fam" id="big-fam"></div>
+      <div class="hl" id="big-lines"></div>
+      <div class="given" id="big-given"></div>
+      <div class="yrs" id="big-yrs"></div>
+    </div>
+    <p class="handover"><strong>Someone with you who reads Hebrew?</strong><br>
+      Hand them the phone. This is exactly what the engraver will cut &mdash; nothing here is abbreviated or simplified.</p>
+  </div>
+</div>
+
+<div class="sheet" id="sheet-checks" hidden>
+  <div class="sheethead">
+    <h2>Line by line</h2>
+    <button class="close" data-close="sheet-checks" type="button">Done</button>
+  </div>
+  <div class="sheetbody" id="checkbody"></div>
+</div>
+
+<script src="/app.js" defer></script>
+</body>
+</html>

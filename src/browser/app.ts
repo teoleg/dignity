@@ -1,13 +1,12 @@
 /**
- * The artifact page.
+ * The page: phone-first UI, shared by both ways of shipping it.
  *
- * Phone-first. The dialogue is driven by the real model through the artifact
- * `sample` capability; the inscription, the Hebrew date, the encoding and the
- * filled form all come from the same tested library the server uses. Nothing
- * here reimplements any of it.
+ * The transport is injected. An artifact page passes a driver backed by the
+ * `sample` capability; a hosted deployment passes one that POSTs to its own
+ * API route, where the key lives. Everything else — the inscription, the
+ * Hebrew date, the encoding, the filled form — is the same tested library.
  */
 
-import { BrowserConversation } from "./ask-claude.js";
 import { renderForm } from "./render-browser.js";
 import { encodeLine, BOXES_PER_LINE, LINES_PER_FORM, type Box } from "../lib/form-table.js";
 import type { Draft, Message, Turn } from "../lib/conversation.js";
@@ -20,6 +19,23 @@ declare global {
   }
 }
 
+/** How this build reaches the model. */
+export interface Driver {
+  advance(history: readonly Message[], draft: Draft): Promise<Turn>;
+}
+
+/** How this build hands the viewer a file. */
+export type Saver = (filename: string, data: Uint8Array) => Promise<void>;
+
+export interface StartOptions {
+  driver: Driver;
+  save: Saver;
+  /** Data URI or URL of the vendor blank. */
+  blank: string;
+  /** Shown when the driver cannot be created at all. */
+  unavailable?: string;
+}
+
 const $ = (id: string) => document.getElementById(id) as HTMLElement;
 const esc = (s: string) =>
   s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
@@ -28,8 +44,10 @@ const history: Message[] = [];
 let draft: Draft = {};
 let lines: Line[] = [];
 let blockers: string[] = ["The inscription is not complete yet."];
-let convo: BrowserConversation | null = null;
+let convo: Driver | null = null;
 let busy = false;
+let saveFile: Saver | null = null;
+let blankSource = "";
 
 /* ---------------------------------------------------------------- chat */
 
@@ -195,14 +213,10 @@ async function download() {
   btn.disabled = true;
   btn.textContent = "Building the form…";
   try {
-    const blank = window.DIGNITY_BLANK;
-    if (!blank) throw new Error("no blank form bundled");
-    const out = await renderForm(blank, lines.map((l) => l.boxes), { cleanScan: true });
-    const downloads = (await window.claude?.use("downloads")) as
-      | { save(o: { filename: string; data: Uint8Array }): Promise<unknown> }
-      | null;
-    if (!downloads) throw new Error("downloads unavailable");
-    await downloads.save({ filename: "monument-order-form.pdf", data: out.pdf });
+    if (!blankSource) throw new Error("no blank form available");
+    if (!saveFile) throw new Error("saving unavailable");
+    const out = await renderForm(blankSource, lines.map((l) => l.boxes), { cleanScan: true });
+    await saveFile("monument-order-form.pdf", out.pdf);
     btn.textContent = "Downloaded";
   } catch (e) {
     btn.textContent = "Could not build the form";
@@ -215,7 +229,10 @@ async function download() {
 
 /* ---------------------------------------------------------------- boot */
 
-async function boot() {
+export async function start(opts: StartOptions): Promise<void> {
+  convo = opts.driver;
+  saveFile = opts.save;
+  blankSource = opts.blank;
   $("peek").addEventListener("click", () => ($("sheet-stone").hidden = false));
   $("openchecks").addEventListener("click", () => ($("sheet-checks").hidden = false));
   document.addEventListener("click", (e) => {
@@ -234,21 +251,11 @@ async function boot() {
 
   render();
 
-  const sample = (await window.claude?.use("sample")) as
-    | { json<T>(i: unknown, o?: Record<string, unknown>): Promise<T> }
-    | null
-    | undefined;
-
-  if (!sample) {
-    bubble(
-      "d",
-      `<p>This page needs Claude to run the conversation, and it is not available here.</p>
-       <p class="hint">Open it from your Claude account — the link works there.</p>`,
-    );
+  if (opts.unavailable) {
+    bubble("d", opts.unavailable);
     setInput(false);
     return;
   }
-  convo = new BrowserConversation(sample);
   bubble(
     "d",
     `<p>I’ll ask a few questions and write the Hebrew for the stone. <strong>You don’t need to read Hebrew</strong> — I’ll show you how every line sounds and what it says.</p>
@@ -260,5 +267,3 @@ async function boot() {
   });
   setInput(true);
 }
-
-void boot();

@@ -6,7 +6,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
-    "build:web": "esbuild src/browser/main.ts --bundle --format=iife --platform=browser --target=es2022 --minify --outfile=dist/web/bundle.js"
+    "build:web": "esbuild src/browser/entry-web.ts --bundle --format=iife --platform=browser --target=es2022 --minify --outfile=public/app.js",
+    "build:artifact": "esbuild src/browser/entry-artifact.ts --bundle --format=iife --platform=browser --target=es2022 --minify --outfile=dist/artifact.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.127.0",
@@ -17,6 +18,7 @@
   },
   "devDependencies": {
     "@types/node": "^26.6.2",
+    "@vercel/node": "^13.0.1",
     "esbuild": "^0.28.2",
     "tsx": "^4.23.15",
     "typescript": "^5.6.0",

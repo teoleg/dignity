@@ -24,11 +24,19 @@ npx tsx scripts/render-sample.ts <blank-image> out.pdf
 npm run build:web  # bundle src/browser for an artifact page
 ```
 
-**A prototype is published as a claude.ai artifact.** It runs the real
-dialogue through the viewer's own Claude account (the `sample` capability),
-so it needs no API key and no hosting. The blank form is embedded in that
-page as a data URI — the page is private, but it is still vendor artwork
-kept out of this repo.
+**Two ways to ship the same page**, differing only in how they reach the
+model:
+
+- **Hosted** (`entry-web.ts` + `api/chat.ts`) — a public URL, no accounts,
+  a shared passcode. The API key sits on the server and never reaches a
+  browser. This is the one for testers who do not have Claude accounts. See
+  `DEPLOY.md`.
+- **Artifact** (`entry-artifact.ts`) — published to claude.ai, calling Claude
+  through the viewer's own account, so no key and no hosting. Requires every
+  viewer to be signed in to Claude.
+
+`public/blank-form.jpg` and `public/app.js` are gitignored: the first is the
+vendor's artwork, the second is build output.
 
 Everything in `docs/decisions/` beyond ADR 0002 describes work not yet built.
 Treat the ADRs as intent; treat `src/` as fact, and update this file when
@@ -161,7 +169,10 @@ The short version of the hard parts:
 | `src/lib/conversation-claude.ts` | Server driver: the Anthropic SDK |
 | `src/browser/ask-claude.ts` | Browser driver: the artifact `sample` capability |
 | `src/browser/render-browser.ts` | Canvas + pdf-lib twin of `form-render.ts` |
-| `src/browser/main.ts` | The artifact page |
+| `src/browser/app.ts` | The page — UI only; the transport is injected |
+| `src/browser/entry-artifact.ts` | Artifact build: model via `sample` |
+| `src/browser/entry-web.ts` | Hosted build: model via `/api/chat` |
+| `api/chat.ts` | The one server endpoint; the API key lives only here |
 
 Design notes that are easy to undo by accident:
 

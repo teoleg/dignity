@@ -6,6 +6,10 @@ samples/*
 
 node_modules/
 dist/
+
+# Build output and the vendor blank, which is not ours to publish.
+public/app.js
+public/blank-form.jpg
 .next/
 coverage/
 
