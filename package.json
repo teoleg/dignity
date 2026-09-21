@@ -6,7 +6,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
-    "build:web": "esbuild src/browser/entry-web.ts --bundle --format=iife --platform=browser --target=es2022 --minify --outfile=public/app.js",
+    "build:web": "node scripts/build-web.mjs",
     "build:artifact": "esbuild src/browser/entry-artifact.ts --bundle --format=iife --platform=browser --target=es2022 --minify --outfile=dist/artifact.js",
     "build": "npm run build:web"
   },

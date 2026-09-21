@@ -77,6 +77,8 @@ body{margin:0;background:var(--ground);color:var(--ink);
 .prop .propcount{color:var(--ink-3);font-size:12.5px;margin-top:6px}
 .btn.wide{width:100%;margin-top:12px}
 .printnote{color:var(--ink-2);font-size:14px;margin:10px 0 6px;text-align:center}
+.build{font-size:10px;color:var(--ink-3);font-variant-numeric:tabular-nums;
+ width:100%;text-align:right;margin-top:2px}
 .plainlink{display:block;text-align:center;color:var(--accent);font-size:14.5px;padding:8px 0}
 
 .foot{flex:none;background:var(--surface);border-top:1px solid var(--rule);
@@ -185,6 +187,7 @@ body{margin:0;background:var(--ground);color:var(--ink);
       <span class="spacer"></span>
       <button class="link" id="restart" type="button">Start over</button>
       <span class="pill" id="pill">Draft</span>
+      <span class="build" id="build" title="Build running on this device"></span>
     </div>
     <button class="peek" id="peek" type="button">
       <span class="peekstone"><span class="hl" id="peek-lines"></span></span>

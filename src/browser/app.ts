@@ -13,6 +13,8 @@ import { derive } from "../lib/conversation.js";
 import type { Draft, Message, Turn } from "../lib/conversation.js";
 import type { Line } from "../lib/inscription.js";
 
+declare const __BUILD__: string;
+
 declare global {
   interface Window {
     claude?: { use(name: string): Promise<unknown> };
@@ -45,6 +47,13 @@ export interface StartOptions {
 }
 
 const $ = (id: string) => document.getElementById(id) as HTMLElement;
+
+// Stamp the build as soon as the bundle runs — before the passcode gate, so
+// "is my change live?" can be answered by looking at the screen.
+{
+  const el = document.getElementById("build");
+  if (el) el.textContent = typeof __BUILD__ === "string" ? __BUILD__ : "dev";
+}
 const esc = (s: string) =>
   s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
 
