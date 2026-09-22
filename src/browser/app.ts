@@ -610,14 +610,20 @@ export async function start(opts: StartOptions): Promise<void> {
     setInput(false);
     return;
   }
+  // The opening is the page's own, not the model's: the first thing a family
+  // sees should not depend on a network call. It says what language to use
+  // because families here do not all think in English — and because a name
+  // written the way the family says it is better input for the Hebrew than
+  // one they have translated for us first.
+  const OPENING =
+    "Who is the monument for? Tell me their name. Write in whatever language " +
+    "you are comfortable with — English, Russian, Hebrew, Yiddish, Spanish — " +
+    "and I will answer in the same one.";
   bubble(
     "d",
     `<p>I’ll ask a few questions and write the Hebrew for the stone. <strong>You don’t need to read Hebrew</strong> — I’ll show you how every line sounds and what it says.</p>
-     <p>Who is the monument for? Tell me their name in English.</p>`,
+     <p>${esc(OPENING)}</p>`,
   );
-  history.push({
-    role: "assistant",
-    content: "Who is the monument for? Tell me their name in English.",
-  });
+  history.push({ role: "assistant", content: OPENING });
   setInput(true);
 }

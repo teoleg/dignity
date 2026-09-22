@@ -153,6 +153,13 @@ The short version of the hard parts:
 - **Gender is one field per record**, and every derived string reads from it.
 - **The user does not read Hebrew** (ADR 0005). Never show Hebrew alone —
   always with how it sounds and what it means.
+- **The conversation follows the family's language**, whichever they write in
+  (ADR 0005, amended). Many families here say this more easily in Russian,
+  Spanish, Yiddish or Hebrew. The `pronunciation` field stays a Latin-letter
+  respelling, and a Hebrew spelling comes from how the family says the name,
+  never from an English version of it. **The page's own chrome is still
+  English** — including the spelling confirmation, which is the family's
+  assent to what gets engraved. That gap is recorded in the ADR, not hidden.
 - **The core function is English → Hebrew translation, not template-filling.**
   The family says what they want; the app produces the Hebrew. The standard
   four lines are a starting point, not the output shape — the form holds 140

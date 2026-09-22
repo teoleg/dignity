@@ -104,3 +104,29 @@ and it costs a sentence of copy.
   day.
 - Approval is disabled while either is open, and the button states what is
   outstanding.
+
+---
+
+## Amendment, 2026-09-22: the conversation follows the family's language
+
+"English-first" was a claim about what a family needs to *have* — no Hebrew
+literacy — and it was written as though English were the alternative. For this
+community that is only half right: many families are immigrants and say this
+more easily in Russian, Spanish, Yiddish or Hebrew, and some switch
+mid-sentence. Tried in the field, a family wrote in their own language and the
+conversation simply worked.
+
+So the model now answers in whichever language the family writes in, and the
+opening says so. Two things do not move with it: `pronunciation` stays a
+Latin-letter respelling so a name can be read aloud, and a Hebrew spelling is
+derived from **how the family says the name**, never from an English version
+of it — which is the more faithful input anyway.
+
+What this does not yet cover, and should be said plainly: **the page's own
+chrome is still English** — the buttons, the "still needed" line, and the two
+blocking questions the page owns rather than the model. A family answering in
+Russian gets a Russian conversation and English buttons. The spelling
+confirmation is the one that matters, because it is the family's assent to
+what gets engraved; if this tool goes past testing, those strings need
+translating, or the confirmation needs to come from the model in their
+language instead of from a fixed button.
