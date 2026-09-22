@@ -129,9 +129,17 @@ describe("when the inscription is finished", () => {
     expect(blockers).toHaveLength(1);
   });
 
+  it("asks for the Hebrew spelling by the English name the family gave", () => {
+    const d: Draft = { englishGiven: "Fyodor", englishFather: "Abraham" };
+    const said = derive(d).blockers[0] ?? "";
+    expect(said).toContain("the Hebrew spelling of Fyodor");
+    expect(said).toContain("Abraham");
+  });
+
   it("says which piece is missing, not just that something is", () => {
     const d = { ...complete };
     delete d.hebrewFather;
+    delete d.englishFather;
     expect(derive(d).blockers[0]).toContain("father's first name");
   });
 

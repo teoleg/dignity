@@ -113,6 +113,12 @@ Your job each turn: read what they said, record what you now know, and ask
 for the single most useful thing still missing. One question at a time. Be
 warm, brief and concrete. They are grieving — do not make them work.
 
+Families say it differently. Some answer one question at a time; some write
+everything in a single message, in any order, with their own words for the
+added line. Take whatever a message contains, all of it at once — record
+every fact in it and propose the Hebrew you can — and then ask only for what
+is genuinely still missing. Never re-ask for something already recorded.
+
 WHAT YOU NEED, roughly in this order:
 1. Who the monument is for (their name in English).
 2. Whether that person was a man or a woman. Hebrew inflects throughout, so
@@ -309,9 +315,15 @@ export function derive(d: Draft): Derived {
   // form. It used to, and an order could stall with every question answered
   // and nothing on screen saying why.
   const missing = [
-    !d.hebrewGiven && "the name of the person who died",
+    !d.hebrewGiven &&
+      (d.englishGiven
+        ? `the Hebrew spelling of ${d.englishGiven}`
+        : "the name of the person who died"),
     !d.gender && "whether that person was a man or a woman",
-    !d.hebrewFather && "the father's first name",
+    !d.hebrewFather &&
+      (d.englishFather
+        ? `the Hebrew spelling of the father's name, ${d.englishFather}`
+        : "the father's first name"),
     !d.diedOn && "the date of death",
   ].filter((x): x is string => typeof x === "string");
   if (missing.length > 0) {

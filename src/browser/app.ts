@@ -67,7 +67,7 @@ const esc = (s: string) =>
 const history: Message[] = [];
 let draft: Draft = {};
 let lines: Line[] = [];
-let blockers: string[] = ["The inscription is not complete yet."];
+let blockers: string[] = derive({}).blockers;
 let convo: Driver | null = null;
 let busy = false;
 let saveFile: Saver | null = null;
@@ -193,6 +193,19 @@ let asked = { confirm: "", sunset: "", offered: false };
  */
 let confirmedSpelling = "";
 
+/**
+ * The question bubble waiting for an answer, if any.
+ *
+ * Pressing "Make the form" can put a question back, and two live copies of
+ * the same buttons is a page where the family answers the wrong one.
+ */
+let askEl: HTMLElement | null = null;
+function ask(html: string): HTMLElement {
+  askEl?.remove();
+  askEl = bubble("d", html);
+  return askEl;
+}
+
 /** Re-derive the inscription after the page itself changes the draft. */
 function recompute() {
   const d = derive(draft);
@@ -205,8 +218,7 @@ function offerNext() {
   // so it is a button, not something inferred from what they typed.
   if (draft.hebrewGiven && !draft.nameConfirmed && asked.confirm !== draft.hebrewGiven) {
     asked.confirm = draft.hebrewGiven;
-    const el = bubble(
-      "d",
+    const el = ask(
       `<p>Read that out loud. Is it how the name was said?</p>
        <button class="btn wide" id="nameok" type="button">Yes, that is right</button>
        <button class="btn wide ghost" id="namebad" type="button" style="margin-top:8px">No, it is not</button>`,
@@ -243,8 +255,7 @@ function offerNext() {
   if (draft.diedOn && draft.timeOfDeath !== "daytime" && draft.timeOfDeath !== "after-sunset"
       && asked.sunset !== draft.diedOn) {
     asked.sunset = draft.diedOn;
-    const el = bubble(
-      "d",
+    const el = ask(
       `<p>Was it during the day, or in the evening?</p>
        <p class="hint">The Jewish day starts at sunset, so an evening death is recorded on the next day. It sets the date remembered every year.</p>
        <button class="btn wide" id="tday" type="button">During the day</button>
@@ -450,17 +461,57 @@ function showForm(png: Uint8Array): HTMLElement {
   return el;
 }
 
-async function download(which: "dl" | "chatdl" = "dl") {
+/**
+ * What is standing in the way, said plainly, with a way to act on it.
+ *
+ * Families do not all answer one question at a time — some write everything
+ * in one message — and a model that believes it is finished stops asking. So
+ * the form button is always live, and pressing it early is what restarts the
+ * conversation: it names every blocker, puts back whichever of the page's own
+ * two questions is unanswered, and asks the model for what it still needs.
+ */
+function explainMissing() {
+  bubble(
+    "d",
+    `<p><strong>Not yet — here is what is still missing.</strong></p>
+     <ul class="blocklist">${blockers.map((b) => `<li>${esc(b)}</li>`).join("")}</ul>`,
+  );
+  // Put back a confirmation the family has not given. These are the page's to
+  // ask, and it must not matter whether the model thought to raise them.
+  if (draft.hebrewGiven && !draft.nameConfirmed) asked.confirm = "";
+  if (draft.diedOn && draft.timeOfDeath !== "daytime" && draft.timeOfDeath !== "after-sunset") {
+    asked.sunset = "";
+  }
+  offerNext();
+  // Anything else is a fact only the family can give, so ask for it there.
+  if (blockers.some((b) => b.startsWith("Still needed"))) {
+    void send("I would like the order form now. What do you still need from me?", false);
+  }
+}
+
+async function download(which: "dl" | "chatdl" | "makeform" = "dl") {
   const btn = document.getElementById(which) as HTMLButtonElement | null;
   if (!btn) return;
-  const label = btn.textContent ?? "Make the filled form";
+  // Asking for the form before it is ready is a fair thing to do, and the
+  // answer is what is still missing — never a dead button.
+  if (blockers.length > 0) {
+    explainMissing();
+    return;
+  }
+  // The header button keeps its short label; the ones in the conversation
+  // report what happened where the family is reading.
+  const header = which === "makeform";
+  const label = header ? "Make the form" : btn.textContent ?? "Make the filled form";
   /** Whatever happens, the viewer must be left able to try again. */
   const restore = (text?: string) => {
     btn.disabled = false;
-    btn.textContent = text ?? label;
+    btn.classList.remove("working");
+    btn.textContent = header ? label : text ?? label;
+    if (!header && text) btn.textContent = text;
   };
   btn.disabled = true;
-  btn.textContent = "Filling the form…";
+  btn.classList.add("working");
+  btn.textContent = header ? "Filling…" : "Filling the form…";
   try {
     if (!blankSource && askForBlank) {
       btn.textContent = "Waiting for the blank form…";
@@ -519,6 +570,7 @@ export async function start(opts: StartOptions): Promise<void> {
     void send(v);
   });
   $("restart").addEventListener("click", () => location.reload());
+  $("makeform").addEventListener("click", () => void download("makeform"));
 
   render();
 

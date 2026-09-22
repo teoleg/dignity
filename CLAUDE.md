@@ -8,7 +8,7 @@ Guidance for AI assistants working in this repository.
 
 **The deterministic core exists and is tested.** `src/lib/` holds the
 character table, the Hebrew date logic, the inscription composer, the form
-renderer, the translation vetting and the model-driven dialogue, with 128
+renderer, the translation vetting and the model-driven dialogue, with 129
 passing tests.
 
 **Running the dialogue needs `ANTHROPIC_API_KEY`.** Everything else runs
@@ -18,7 +18,7 @@ Gregorian date in, a filled PDF of the vendor's own form out. There is no
 application around it yet — no Next.js app, no database, no UI.
 
 ```
-npm test          # vitest, 128 tests
+npm test          # vitest, 129 tests
 npm run typecheck # tsc --noEmit, strict
 npx tsx scripts/render-sample.ts <blank-image> out.pdf
 npm run build:web  # bundle src/browser for an artifact page
@@ -242,7 +242,18 @@ Design notes that are easy to undo by accident:
   how the Hebrew sounds. Blocking on one stalled an order with every question
   answered and nothing on screen saying why.
 - **A blocker names the missing thing.** "The inscription is not complete
-  yet" tells a family nothing they can act on.
+  yet" tells a family nothing they can act on. Where the family has given an
+  English name and the model has not spelled it yet, it says so by name.
+- **"Make the form" is in the header and is always live.** Families do not
+  all answer one question at a time — some write everything in one message,
+  and a model that believes it is finished stops asking. Pressing the button
+  early is how the conversation restarts: it names every blocker, puts back
+  whichever of the page's own two questions is unanswered, and asks the model
+  for what it still needs. A disabled button would have left the family with
+  nowhere to go.
+- **One question on screen at a time.** Re-asking replaces the bubble that
+  was waiting; two live copies of the same buttons is a page where the family
+  answers the wrong one.
 - **`conversation.ts` must never import the SDK.** It is shared by the server
   and the browser bundle; a driver moves a turn across the wire and hands it
   to `applyTurn`. Both drivers build the prompt with `promptFor`, so the
@@ -341,7 +352,7 @@ the images, and do not put real names or dates into committed files.
 CLAUDE.md               this file
 package.json            npm test · npm run typecheck
 src/lib/                the tested core — see "What is built"
-src/lib/__tests__/      128 tests
+src/lib/__tests__/      129 tests
 src/browser/            browser bundle for the artifact page
 scripts/render-sample.ts  dev utility: fill a blank and write a PDF
 docs/domain/
