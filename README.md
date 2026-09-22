@@ -1,4 +1,4 @@
-# dignity
+# Dignity Project
 
 A tool that helps families order a Jewish monument with the Hebrew inscription
 correct — written for the Philadelphia Jewish community, and for one specific

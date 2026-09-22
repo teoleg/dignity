@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Dignity Monument Composer</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;500;700&family=IBM+Plex+Sans:wght@400;450;500;600&family=Cormorant+Garamond:wght@500;600&display=swap">
+<title>Dignity Project — Hebrew monument inscriptions</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;500;700&family=Suez+One&family=IBM+Plex+Sans:wght@400;450;500;600&family=Cormorant+Garamond:wght@500;600&display=swap">
 <style>
 :root{
   --ground:#F2F4F6;--surface:#FFFFFF;--surface-2:#E9EDF0;
@@ -40,7 +40,8 @@ body{margin:0;background:var(--ground);color:var(--ink);
 .top{flex:none;background:var(--surface);border-bottom:1px solid var(--rule);
  padding:10px 16px;padding-top:calc(10px + env(safe-area-inset-top,0px))}
 .topline{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.wordmark{font-family:"Frank Ruhl Libre",serif;font-size:18px;font-weight:700}
+.wordmark{font-family:"Suez One","Frank Ruhl Libre",serif;font-size:16px;font-weight:400;
+ letter-spacing:.005em;line-height:1.15}
 .topline .spacer{flex:1}
 .pill{font-size:11px;letter-spacing:.05em;text-transform:uppercase;font-weight:600;
  padding:4px 9px;border-radius:99px;background:var(--flag-soft);color:var(--flag)}
@@ -166,7 +167,8 @@ body{margin:0;background:var(--ground);color:var(--ink);
 .gate[hidden]{display:none}
 .gatecard{max-width:360px;width:100%;background:var(--surface);border:1px solid var(--rule);
  border-radius:12px;padding:22px}
-.gatecard h1{font-family:"Frank Ruhl Libre",serif;font-size:22px;margin:0 0 6px}
+.gatecard h1{font-family:"Suez One","Frank Ruhl Libre",serif;font-size:21px;font-weight:400;
+ margin:0 0 6px;line-height:1.2}
 .gatecard p{color:var(--ink-2);font-size:14.5px;margin:0 0 16px}
 .gatecard input{width:100%;font:inherit;font-size:16px;height:var(--tap);padding:0 13px;
  border:1px solid var(--rule-2);border-radius:9px;background:var(--ground);color:var(--ink);margin-bottom:10px}
@@ -186,7 +188,7 @@ body{margin:0;background:var(--ground);color:var(--ink);
 
 <div class="gate" id="gate" hidden>
   <form class="gatecard" id="gateform">
-    <h1>Dignity</h1>
+    <h1>Dignity Project</h1>
     <p>Enter the code you were given to try the monument inscription tool.</p>
     <input id="gatepass" type="password" autocomplete="off" placeholder="Code" autofocus>
     <button class="btn wide" style="margin-top:0" type="submit">Continue</button>
@@ -213,7 +215,7 @@ body{margin:0;background:var(--ground);color:var(--ink);
 <div class="app">
   <header class="top">
     <div class="topline">
-      <span class="wordmark">Dignity</span>
+      <span class="wordmark">Dignity Project</span>
       <span class="spacer"></span>
       <button class="btn small ghost" id="restart" type="button">Start over</button>
       <button class="btn small" id="makeform" type="button">Make the form</button>
