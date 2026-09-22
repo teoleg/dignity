@@ -8,7 +8,7 @@ Guidance for AI assistants working in this repository.
 
 **The deterministic core exists and is tested.** `src/lib/` holds the
 character table, the Hebrew date logic, the inscription composer, the form
-renderer, the translation vetting and the model-driven dialogue, with 120
+renderer, the translation vetting and the model-driven dialogue, with 128
 passing tests.
 
 **Running the dialogue needs `ANTHROPIC_API_KEY`.** Everything else runs
@@ -18,7 +18,7 @@ Gregorian date in, a filled PDF of the vendor's own form out. There is no
 application around it yet — no Next.js app, no database, no UI.
 
 ```
-npm test          # vitest, 120 tests
+npm test          # vitest, 128 tests
 npm run typecheck # tsc --noEmit, strict
 npx tsx scripts/render-sample.ts <blank-image> out.pdf
 npm run build:web  # bundle src/browser for an artifact page
@@ -170,7 +170,7 @@ The short version of the hard parts:
 | `src/lib/form-render.ts` | Draws the numbers onto the vendor's blank, out as PDF |
 | `src/lib/translation.ts` | Vets model output; independent back-translation (ADR 0006) |
 | `src/lib/translation-claude.ts` | Claude adapter — **not yet run against the live API** |
-| `src/lib/conversation.ts` | Model-driven dialogue — logic only, **no SDK import** |
+| `src/lib/conversation.ts` | Model-driven dialogue — logic only, **no SDK import**; strips Hebrew from replies |
 | `src/lib/conversation-claude.ts` | Server driver: the Anthropic SDK |
 | `src/browser/ask-claude.ts` | Browser driver: the artifact `sample` capability |
 | `src/browser/render-browser.ts` | Canvas twin of `form-render.ts`; out as a picture |
@@ -226,6 +226,13 @@ Design notes that are easy to undo by accident:
 - `derive()` decides whether an inscription is finished, not the model —
   and `promptFor` tells the model what is still open, or it announces that a
   blocked order is complete and the family reads that as done.
+- **Hebrew cannot reach the family through the prose.** `applyTurn` runs
+  every reply through `withoutHebrew`, so no driver can carry it: an aside
+  that held only Hebrew is dropped, Hebrew followed by its English gloss is
+  dropped, and anything left becomes "the Hebrew". Instruction was not
+  enough — the model wrote names, a family's line and a Hebrew date into the
+  chat. Vetted Hebrew still reaches the family in the proposal cards, with
+  how it sounds and what it means.
 - **The model has no way to send anything** and is told so. It has claimed to
   be "passing this along to the engraver"; nothing is sent anywhere, and a
   family believing an order was placed is a serious failure.
@@ -334,7 +341,7 @@ the images, and do not put real names or dates into committed files.
 CLAUDE.md               this file
 package.json            npm test · npm run typecheck
 src/lib/                the tested core — see "What is built"
-src/lib/__tests__/      120 tests
+src/lib/__tests__/      128 tests
 src/browser/            browser bundle for the artifact page
 scripts/render-sample.ts  dev utility: fill a blank and write a PDF
 docs/domain/

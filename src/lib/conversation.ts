@@ -197,11 +197,53 @@ export type ParsedTurn = z.infer<typeof TurnSchema>;
 /** What the library can work out on its own, with no model involved. */
 export type Derived = Pick<Turn, "lines" | "capacity" | "blockers">;
 
+/** Hebrew letters, including the presentation forms Unicode keeps apart. */
+const HEB = "\\u0590-\\u05FF\\uFB1D-\\uFB4F";
+/** Punctuation that may sit *between* Hebrew words. No Latin letter can, so
+ *  a run cannot swallow English prose. */
+const BETWEEN = "\\s'\"\u201C\u201D\u2018\u2019(),.;:\\-\u2013\u2014";
+const RUN = `[${HEB}](?:[${HEB}${BETWEEN}]*[${HEB}])?`;
+const OPEN = `[([{"'\u201C\u2018]`;
+const CLOSE = `[)\\]}"'\u201D\u2019]`;
+
+/**
+ * Take the Hebrew out of the model's prose. Not a request — a guarantee.
+ *
+ * The model is told to keep Hebrew out of its reply and to put it only in the
+ * proposal fields, and it does not always obey. Loose Hebrew in the chat is
+ * unreadable to the family (ADR 0005: never Hebrew without how it sounds and
+ * what it means) and, if it is a date, wrong — the model never computes one.
+ * Every piece of Hebrew that matters travels in `hebrewGiven`,
+ * `hebrewFather` and `extraLine`, is vetted against the form's table, and is
+ * shown with its pronunciation. So the prose loses nothing by being cleared
+ * of it, and nothing unvetted can reach the family's eyes.
+ */
+export function withoutHebrew(reply: string): string {
+  const cleaned = reply
+    // An aside holding nothing but Hebrew — "Dina bat Chaim (דינה בת חיים)".
+    // The sentence around it was written to read without the aside.
+    .replace(new RegExp(`${OPEN}\\s*${RUN}\\s*${CLOSE}`, "g"), "")
+    // Hebrew whose English gloss follows it — "reads תודה על הכל (thank
+    // you...)". The gloss carries the meaning, so the Hebrew just goes.
+    .replace(new RegExp(`${RUN}\\s*(?=${OPEN})`, "g"), "")
+    // Anything left stands in the sentence itself, where deleting it would
+    // leave a hole. Name it instead.
+    .replace(new RegExp(RUN, "g"), "the Hebrew")
+    .replace(/(?:the Hebrew)(?: the Hebrew)+/g, "the Hebrew")
+    .replace(/[ \t]{2,}/g, " ")
+    .replace(/\s+([,.;:!?])/g, "$1")
+    .replace(/([([{])\s+/g, "$1")
+    .trim();
+  // A reply that was nothing but Hebrew must still say something.
+  const empty = cleaned.length === 0 || /^(?:the Hebrew[\s.,;:!?]*)+$/.test(cleaned);
+  return empty ? "Here is the Hebrew, with how it sounds and what it means." : cleaned;
+}
+
 /** Merge what the model learned, vetting every piece of Hebrew it offered. */
 export function applyTurn(
   draft: Draft,
   parsed: ParsedTurn,
-): Derived & { draft: Draft; rejected: Array<{ hebrew: string; reason: string }> } {
+): Derived & { reply: string; draft: Draft; rejected: Array<{ hebrew: string; reason: string }> } {
   const next: Draft = { ...draft };
   const rejected: Array<{ hebrew: string; reason: string }> = [];
 
@@ -240,7 +282,9 @@ export function applyTurn(
       };
   }
 
-  return { draft: next, rejected, ...derive(next) };
+  // The reply is cleaned here, in the one place every driver goes through,
+  // so no transport can carry raw Hebrew prose to the family.
+  return { reply: withoutHebrew(parsed.reply), draft: next, rejected, ...derive(next) };
 }
 
 function vet(hebrew: string): string | null {

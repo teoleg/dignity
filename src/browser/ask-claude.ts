@@ -67,6 +67,7 @@ export class BrowserConversation {
         ...derive(draft),
       };
     }
-    return { reply: parsed.data.reply, ...applyTurn(draft, parsed.data) };
+    // applyTurn supplies the reply: it is the only path that strips Hebrew.
+    return applyTurn(draft, parsed.data);
   }
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { applyTurn, derive, type Draft, type ParsedTurn } from "../conversation.js";
+import { applyTurn, derive, withoutHebrew, type Draft, type ParsedTurn } from "../conversation.js";
 
 /**
  * The model drives the conversation; these tests cover what happens to what
@@ -166,5 +166,56 @@ describe("when the inscription is finished", () => {
     });
     expect(withExtra.capacity.linesFree).toBe(0);
     expect(withExtra.lines).toHaveLength(5);
+  });
+});
+
+/**
+ * The model is told to keep Hebrew out of its prose and does not always obey.
+ * It has written names, a family's line, and a Hebrew date into the chat —
+ * unreadable to a family who does not read Hebrew, and in the date's case
+ * wrong, since the model never computes one. So the prose is cleaned in code.
+ */
+describe("Hebrew never reaches the family through the prose", () => {
+  const hasHebrew = (s: string) => /[\u0590-\u05FF\uFB1D-\uFB4F]/.test(s);
+
+  it("drops an aside that held nothing but Hebrew", () => {
+    const out = withoutHebrew("Here is the inscription: Dina bat Chaim (דינה בת חיים), who died in 2025.");
+    expect(out).toBe("Here is the inscription: Dina bat Chaim, who died in 2025.");
+  });
+
+  it("drops a quoted line and keeps the English gloss beside it", () => {
+    const out = withoutHebrew("The added line reads 'תודה על הכל' (thank you for everything).");
+    expect(hasHebrew(out)).toBe(false);
+    expect(out).toContain("thank you for everything");
+  });
+
+  it("drops Hebrew whose English gloss follows it", () => {
+    const out = withoutHebrew("The name is written \u05d3\u05d9\u05e0\u05d4 (Dina), and that is it.");
+    expect(out).toBe("The name is written (Dina), and that is it.");
+  });
+
+  it("names Hebrew standing in the sentence rather than leaving a hole", () => {
+    const out = withoutHebrew("I wrote it as פיודור and his father as אברהם.");
+    expect(out).toBe("I wrote it as the Hebrew and his father as the Hebrew.");
+  });
+
+  it("removes a Hebrew date, which the model must never write at all", () => {
+    expect(hasHebrew(withoutHebrew("The Hebrew date is כ״ב כסלו תשפ״ו."))).toBe(false);
+  });
+
+  it("still says something when the whole reply was Hebrew", () => {
+    const out = withoutHebrew("דינה בת חיים");
+    expect(hasHebrew(out)).toBe(false);
+    expect(out.length).toBeGreaterThan(20);
+  });
+
+  it("leaves a reply with no Hebrew exactly as written", () => {
+    const plain = "Was it during the day, or in the evening?";
+    expect(withoutHebrew(plain)).toBe(plain);
+  });
+
+  it("cleans the reply on the one path every driver goes through", () => {
+    const { reply } = applyTurn({}, turn({ reply: "Her name is שרה in Hebrew." }));
+    expect(hasHebrew(reply)).toBe(false);
   });
 });

@@ -59,7 +59,8 @@ export class Conversation {
     if (!parsed) {
       return { reply: "Sorry — could you say that again?", draft, rejected: [], ...derive(draft) };
     }
-    return { reply: parsed.reply, ...applyTurn(draft, parsed) };
+    // applyTurn supplies the reply: it is the only path that strips Hebrew.
+    return applyTurn(draft, parsed);
   }
 }
 
