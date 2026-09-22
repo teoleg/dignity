@@ -2,6 +2,8 @@ import { describe, it, expect } from "vitest";
 import {
   applyTurn,
   candidateDates,
+  confirmName,
+  confirmedKey,
   derive,
   withoutHebrew,
   type Draft,
@@ -33,11 +35,13 @@ const turn = (
   updates: { ...EMPTY.updates, ...(over.updates ?? {}) },
 });
 
-const complete: Draft = {
+// confirmName rather than `nameConfirmed: true`: a confirmation is of a
+// particular spelling, and a bare flag is not one.
+const complete: Draft = confirmName({
   englishGiven: "Sarah", englishFather: "Abraham", gender: "female",
   hebrewGiven: "שרה", hebrewFather: "אברהם",
-  diedOn: "2024-01-25", timeOfDeath: "daytime", nameConfirmed: true,
-};
+  diedOn: "2024-01-25", timeOfDeath: "daytime",
+});
 
 describe("what the model learns", () => {
   it("is merged into the draft", () => {
@@ -288,5 +292,91 @@ describe("choosing a date when the hour is lost", () => {
     expect(lines[2]?.english).toContain("chosen by the family");
     // The date not taken stays visible, so the choice can be checked.
     expect(lines[2]?.english).toContain("16 Sh'vat 5784");
+  });
+});
+
+/**
+ * A confirmation must survive the conversation carrying on.
+ *
+ * Found in the field: after the family approved the spelling, asking one more
+ * question made the model re-state the same name, which cleared the flag, and
+ * the page asked for approval again — every turn, forever, while the form
+ * itself was correct. A confirmation is of a *spelling*, so only a changed
+ * spelling may undo it.
+ */
+describe("confirming the spelling", () => {
+  const unconfirmed: Draft = {
+    englishGiven: "Avatar", englishFather: "Moishe", gender: "male",
+    hebrewGiven: "אבטר", hebrewFather: "מוישה",
+    diedOn: "1988-12-20", timeOfDeath: "daytime",
+  };
+  const blocked = (d: Draft) =>
+    derive(d).blockers.some((b) => b.includes("not been confirmed"));
+
+  it("blocks until the family confirms", () => {
+    expect(blocked(unconfirmed)).toBe(true);
+  });
+
+  it("stops blocking once they do", () => {
+    expect(blocked(confirmName(unconfirmed))).toBe(false);
+  });
+
+  it("survives the model re-stating the same name", () => {
+    const { draft } = applyTurn(
+      confirmName(unconfirmed),
+      turn({
+        reply: "Anything else to add?",
+        hebrewGiven: { hebrew: "אבטר", pronunciation: "avatar", note: null },
+        hebrewFather: { hebrew: "מוישה", pronunciation: "moishe", note: null },
+      }),
+    );
+    expect(draft.nameConfirmed).toBe(true);
+    expect(blocked(draft)).toBe(false);
+  });
+
+  it("survives a re-statement that differs only in Unicode normalisation", () => {
+    const confirmed = confirmName({ ...unconfirmed, hebrewGiven: "שרה" });
+    const { draft } = applyTurn(
+      confirmed,
+      turn({ hebrewGiven: { hebrew: "שרה".normalize("NFD"), pronunciation: "sa-RAH", note: null } }),
+    );
+    expect(blocked(draft)).toBe(false);
+  });
+
+  it("asks again when the spelling actually changes", () => {
+    const { draft } = applyTurn(
+      confirmName(unconfirmed),
+      turn({ hebrewGiven: { hebrew: "אביתר", pronunciation: "ev-ya-TAR", note: null } }),
+    );
+    expect(draft.nameConfirmed).toBe(false);
+    expect(blocked(draft)).toBe(true);
+  });
+
+  it("asks again when the father's spelling changes, not just the name's", () => {
+    const { draft } = applyTurn(
+      confirmName(unconfirmed),
+      turn({ hebrewFather: { hebrew: "משה", pronunciation: "mo-SHE", note: null } }),
+    );
+    expect(blocked(draft)).toBe(true);
+  });
+
+  // The family may simply type "yes, that is right" instead of pressing the
+  // button. The model reports it, and that has to stick just as hard.
+  it("accepts a confirmation the model reports, and it sticks", () => {
+    const first = applyTurn(unconfirmed, turn({ updates: { nameConfirmed: true } }));
+    expect(blocked(first.draft)).toBe(false);
+    const second = applyTurn(
+      first.draft,
+      turn({ hebrewGiven: { hebrew: "אבטר", pronunciation: "avatar", note: null } }),
+    );
+    expect(blocked(second.draft)).toBe(false);
+  });
+
+  it("will not let a flag with no spelling behind it count", () => {
+    expect(blocked({ ...unconfirmed, nameConfirmed: true })).toBe(true);
+  });
+
+  it("keys a confirmation to both names together", () => {
+    expect(confirmedKey(unconfirmed)).toBe("אבטר|מוישה");
   });
 });

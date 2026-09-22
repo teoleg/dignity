@@ -78,7 +78,7 @@ trade here. In practice that means:
 
 **Working prototype, deployed, used by a handful of testers.** The
 deterministic core — character table, Hebrew calendar, inscription composer,
-grid detection, form rendering, dialogue logic — is covered by 141 tests, and
+grid detection, form rendering, dialogue logic — is covered by 150 tests, and
 the whole path from a conversation to a filled form has been run end to end.
 
 Not yet true:

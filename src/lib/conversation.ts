@@ -25,6 +25,7 @@
  */
 
 import { z } from "zod";
+import { canonical } from "./hebrew-text.js";
 import { BOXES_PER_LINE, encodeLine } from "./form-table.js";
 import { chooseWhenUnknown, hebrewDateOfDeath, type TimeOfDeath } from "./hebrew-date.js";
 import {
@@ -50,6 +51,16 @@ export interface Draft {
   hebrewFatherSaid?: string;
   /** The family has confirmed the name sounds right. */
   nameConfirmed?: boolean;
+  /**
+   * The exact spelling they confirmed, as `confirmedKey` renders it.
+   *
+   * Without this, a confirmation is a bare boolean that anything can clear
+   * and nothing can restore: the model re-states the same name on a later
+   * turn, the flag drops, and the family is asked to approve a spelling they
+   * already approved — over and over. With it, only a *changed* spelling
+   * un-confirms, which is the thing that genuinely needs re-checking.
+   */
+  nameConfirmedFor?: string;
   /** yyyy-mm-dd */
   diedOn?: string;
   timeOfDeath?: TimeOfDeath;
@@ -278,6 +289,22 @@ export function withoutHebrew(reply: string): string {
   return empty ? "Here is the Hebrew, with how it sounds and what it means." : cleaned;
 }
 
+/**
+ * What a confirmation is *of*: both Hebrew names together, canonicalised.
+ *
+ * Both, because the family confirms the whole line they were read — "Avatar
+ * son of Moishe" — not one name. Canonical, so the same letters spelled with
+ * a different Unicode normalisation do not read as a different name.
+ */
+export function confirmedKey(d: Draft): string {
+  return `${canonical(d.hebrewGiven ?? "")}|${canonical(d.hebrewFather ?? "")}`;
+}
+
+/** Record the family's confirmation of the spelling now in the draft. */
+export function confirmName(d: Draft): Draft {
+  return { ...d, nameConfirmed: true, nameConfirmedFor: confirmedKey(d) };
+}
+
 /** Merge what the model learned, vetting every piece of Hebrew it offered. */
 export function applyTurn(
   draft: Draft,
@@ -302,10 +329,16 @@ export function applyTurn(
       rejected.push({ hebrew: p.hebrew, reason: bad });
       return;
     }
+    const changed = canonical(p.hebrew) !== canonical(next[key] ?? "");
     next[key] = p.hebrew;
     next[key === "hebrewGiven" ? "hebrewGivenSaid" : "hebrewFatherSaid"] = p.pronunciation;
-    // A new spelling is a new thing to confirm.
-    next.nameConfirmed = false;
+    // Only a *different* spelling is a new thing to confirm. Re-stating the
+    // same one — which a model does readily — must not undo the family's
+    // answer, or they are asked to approve it again on every turn.
+    if (changed) {
+      next.nameConfirmed = false;
+      delete next.nameConfirmedFor;
+    }
   };
   takeName(parsed.hebrewGiven, "hebrewGiven");
   takeName(parsed.hebrewFather, "hebrewFather");
@@ -323,6 +356,11 @@ export function applyTurn(
 
   // The reply is cleaned here, in the one place every driver goes through,
   // so no transport can carry raw Hebrew prose to the family.
+  // A confirmation — from the family's button, or the model reporting what
+  // they typed — is stamped with the spelling it applies to.
+  if (next.nameConfirmed && next.nameConfirmedFor !== confirmedKey(next)) {
+    next.nameConfirmedFor = confirmedKey(next);
+  }
   return { reply: withoutHebrew(parsed.reply), draft: next, rejected, ...derive(next) };
 }
 
@@ -384,7 +422,9 @@ export function derive(d: Draft): Derived {
   };
   const lines = compose(decedent, d.extra);
   const stop = blockers(lines);
-  if (!d.nameConfirmed) {
+  // A stale confirmation is no confirmation: if the spelling has changed
+  // since, it needs checking again.
+  if (!d.nameConfirmed || d.nameConfirmedFor !== confirmedKey(d)) {
     stop.push("The Hebrew spelling of the name has not been confirmed by the family.");
   }
   return { lines, capacity: capacity(lines), blockers: stop };

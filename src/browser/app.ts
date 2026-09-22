@@ -9,7 +9,7 @@
 
 import { renderImage } from "./render-browser.js";
 import { encodeLine, BOXES_PER_LINE, LINES_PER_FORM, type Box } from "../lib/form-table.js";
-import { candidateDates, derive } from "../lib/conversation.js";
+import { candidateDates, confirmName, confirmedKey, derive } from "../lib/conversation.js";
 import type { Draft, Message, Turn } from "../lib/conversation.js";
 import type { Line } from "../lib/inscription.js";
 
@@ -130,12 +130,6 @@ function copyFor(code: string): string {
 
 function apply(turn: Turn) {
   draft = turn.draft;
-  // The family's answer outranks the model's guess about it.
-  if (confirmedSpelling && draft.hebrewGiven === confirmedSpelling && !draft.nameConfirmed) {
-    draft = { ...draft, nameConfirmed: true };
-    const d = derive(draft);
-    turn = { ...turn, lines: d.lines, blockers: d.blockers };
-  }
   lines = turn.lines;
   blockers = turn.blockers;
   history.push({ role: "assistant", content: turn.reply });
@@ -182,16 +176,6 @@ function apply(turn: Turn) {
  * decided here now, from state the page can see.
  */
 let asked = { confirm: "", sunset: "", offered: false };
-
-/**
- * A spelling the family has confirmed with the button.
- *
- * The model is asked to record the confirmation too, but it is not allowed to
- * take it back: an unnecessary `false` from a turn would silently re-block the
- * order with no way out, which is the bug this whole flow exists to fix. A
- * changed spelling clears it — `applyTurn` already re-arms confirmation then.
- */
-let confirmedSpelling = "";
 
 /**
  * The question bubble waiting for an answer, if any.
@@ -254,8 +238,8 @@ function noteTheDateUsed() {
 function offerNext() {
   // The family confirms the spelling by ear. That is a decision they make,
   // so it is a button, not something inferred from what they typed.
-  if (draft.hebrewGiven && !draft.nameConfirmed && asked.confirm !== draft.hebrewGiven) {
-    asked.confirm = draft.hebrewGiven;
+  if (draft.hebrewGiven && !draft.nameConfirmed && asked.confirm !== confirmedKey(draft)) {
+    asked.confirm = confirmedKey(draft);
     const el = ask(
       `<p>Read that out loud. Is it how the name was said?</p>
        <button class="btn wide" id="nameok" type="button">Yes, that is right</button>
@@ -266,8 +250,9 @@ function offerNext() {
       if (box) box.innerHTML = `<p class="hint">${text}</p>`;
     };
     el.querySelector("#nameok")?.addEventListener("click", () => {
-      confirmedSpelling = draft.hebrewGiven ?? "";
-      draft = { ...draft, nameConfirmed: true };
+      // confirmName stamps *which* spelling was confirmed, so the answer
+      // survives the model re-stating the same name later.
+      draft = confirmName(draft);
       recompute();
       settle("Confirmed.");
       render();
@@ -276,8 +261,8 @@ function offerNext() {
       void send("Yes, that spelling is right.", false);
     });
     el.querySelector("#namebad")?.addEventListener("click", () => {
-      confirmedSpelling = "";
       draft = { ...draft, nameConfirmed: false };
+      delete draft.nameConfirmedFor;
       recompute();
       settle("Not right — I will ask again.");
       asked.confirm = "";

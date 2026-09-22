@@ -8,7 +8,7 @@ Guidance for AI assistants working in this repository.
 
 **The deterministic core exists and is tested.** `src/lib/` holds the
 character table, the Hebrew date logic, the inscription composer, the form
-renderer, the translation vetting and the model-driven dialogue, with 141
+renderer, the translation vetting and the model-driven dialogue, with 150
 passing tests.
 
 **Running the dialogue needs `ANTHROPIC_API_KEY`.** Everything else runs
@@ -18,7 +18,7 @@ Gregorian date in, a filled PDF of the vendor's own form out. There is no
 application around it yet — no Next.js app, no database, no UI.
 
 ```
-npm test          # vitest, 141 tests
+npm test          # vitest, 150 tests
 npm run typecheck # tsc --noEmit, strict
 npx tsx scripts/render-sample.ts <blank-image> out.pdf
 npm run build:web  # bundle src/browser for an artifact page
@@ -262,6 +262,13 @@ Design notes that are easy to undo by accident:
   the family's gloss and are never engraved, so a missing one falls back to
   how the Hebrew sounds. Blocking on one stalled an order with every question
   answered and nothing on screen saying why.
+- **A confirmation is of a *spelling*, not a boolean** — `Draft.nameConfirmedFor`
+  holds `confirmedKey` (both Hebrew names, canonicalised) and `derive` counts
+  the confirmation only while it still matches. `takeName` un-confirms only
+  when the spelling actually *changed*. As a bare flag it was cleared by the
+  model re-stating the same name on a later turn, so a family who had already
+  approved it was asked again every turn while the form itself was correct.
+  Use `confirmName(draft)`; never set `nameConfirmed` by hand.
 - **A blocker names the missing thing.** "The inscription is not complete
   yet" tells a family nothing they can act on. Where the family has given an
   English name and the model has not spelled it yet, it says so by name.
@@ -374,7 +381,7 @@ README.md               project overview, for anyone arriving at the repo
 CLAUDE.md               this file
 package.json            npm test · npm run typecheck
 src/lib/                the tested core — see "What is built"
-src/lib/__tests__/      141 tests
+src/lib/__tests__/      150 tests
 src/browser/            browser bundle for the artifact page
 scripts/render-sample.ts  dev utility: fill a blank and write a PDF
 docs/domain/
