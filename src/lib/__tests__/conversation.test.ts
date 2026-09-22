@@ -1,12 +1,16 @@
 import { describe, it, expect } from "vitest";
 import {
+  CONTEXT,
   applyTurn,
   candidateDates,
   confirmName,
   confirmedKey,
   derive,
+  promptFor,
+  transcript,
   withoutHebrew,
   type Draft,
+  type Message,
   type ParsedTurn,
 } from "../conversation.js";
 
@@ -378,5 +382,58 @@ describe("confirming the spelling", () => {
 
   it("keys a confirmation to both names together", () => {
     expect(confirmedKey(unconfirmed)).toBe("אבטר|מוישה");
+  });
+});
+
+/**
+ * What the model is shown, and therefore what a turn costs.
+ *
+ * The transcript is re-sent on every turn, so an unbounded one means the
+ * price of a turn grows with the conversation and a single pasted wall of
+ * text is paid for again and again. Trimming is safe: the facts live in the
+ * JSON above the transcript, and `derive` decides what is still open.
+ */
+describe("what one turn sends to the model", () => {
+  const msgs = (n: number): Message[] =>
+    Array.from({ length: n }, (_, i) => ({
+      role: i % 2 ? "assistant" : "user",
+      content: `turn ${i}`,
+    }));
+
+  it("sends a short conversation whole", () => {
+    const t = transcript(msgs(6));
+    expect(t).toContain("turn 0");
+    expect(t).toContain("turn 5");
+    expect(t).not.toContain("omitted");
+  });
+
+  it("keeps only the recent turns of a long one", () => {
+    const t = transcript(msgs(200));
+    expect(t.split("\n").filter((l) => l.startsWith("Family:") || l.startsWith("You:")))
+      .toHaveLength(CONTEXT.recentTurns);
+    expect(t).toContain("turn 199");
+    expect(t).not.toContain("turn 0:");
+  });
+
+  it("says that earlier turns were left out, so it does not read as the start", () => {
+    expect(transcript(msgs(200))).toContain("176 earlier turns omitted");
+  });
+
+  it("clips one enormous message instead of paying for it every turn", () => {
+    const huge = "x".repeat(50_000);
+    const t = transcript([{ role: "user", content: huge }]);
+    expect(t.length).toBeLessThan(CONTEXT.perMessage + 200);
+    expect(t).toContain("…");
+  });
+
+  it("bounds the whole prompt however long the conversation gets", () => {
+    const long = promptFor(complete, msgs(500).map((m) => ({ ...m, content: "y".repeat(5000) })));
+    // Every fact still present, and the size is a function of the caps only.
+    expect(long).toContain("Known so far");
+    expect(long.length).toBeLessThan(CONTEXT.recentTurns * (CONTEXT.perMessage + 40) + 4000);
+  });
+
+  it("survives a malformed message without throwing", () => {
+    expect(() => transcript([{ role: "user" } as unknown as Message])).not.toThrow();
   });
 });

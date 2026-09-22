@@ -8,7 +8,7 @@ Guidance for AI assistants working in this repository.
 
 **The deterministic core exists and is tested.** `src/lib/` holds the
 character table, the Hebrew date logic, the inscription composer, the form
-renderer, the translation vetting and the model-driven dialogue, with 156
+renderer, the translation vetting and the model-driven dialogue, with 162
 passing tests.
 
 **Running the dialogue needs `ANTHROPIC_API_KEY`.** Everything else runs
@@ -18,7 +18,7 @@ Gregorian date in, a filled PDF of the vendor's own form out. There is no
 application around it yet — no Next.js app, no database, no UI.
 
 ```
-npm test          # vitest, 156 tests
+npm test          # vitest, 162 tests
 npm run typecheck # tsc --noEmit, strict
 npx tsx scripts/render-sample.ts <blank-image> out.pdf
 npm run build:web  # bundle src/browser for an artifact page
@@ -282,6 +282,14 @@ Design notes that are easy to undo by accident:
 - **One question on screen at a time.** Re-asking replaces the bubble that
   was waiting; two live copies of the same buttons is a page where the family
   answers the wrong one.
+- **What a turn sends is bounded** (`CONTEXT` in `conversation.ts`): the
+  recent turns only, each clipped. The transcript is re-sent every turn, so
+  an unbounded one makes the price of a turn grow with the conversation and
+  charges a pasted wall of text again on every turn after. Trimming is safe
+  *because* `describeDraft` carries every established fact above the
+  transcript and `derive` decides what is still open — the transcript is for
+  tone and for what was just said. Putting facts only in the prose would
+  break this.
 - **`api/chat.ts` fails closed.** With no `DIGNITY_PASSCODE` set it refuses
   every request rather than serving an open endpoint that spends someone's
   credit — the person who forgot to set it is exactly the person who would
@@ -389,7 +397,7 @@ README.md               project overview, for anyone arriving at the repo
 CLAUDE.md               this file
 package.json            npm test · npm run typecheck
 src/lib/                the tested core — see "What is built"
-src/lib/__tests__/      150 tests
+src/lib/__tests__/      156 tests
 api/__tests__/          6 tests: what one request may carry
 src/browser/            browser bundle for the artifact page
 scripts/render-sample.ts  dev utility: fill a blank and write a PDF

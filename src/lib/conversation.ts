@@ -208,8 +208,41 @@ export function describeDraft(d: Draft): string {
   });
 }
 
+/**
+ * How much of the conversation the model is shown, and how long one message
+ * may be.
+ *
+ * The whole transcript is re-sent every turn, so without a bound the cost of
+ * a turn grows with the length of the conversation — and a single pasted wall
+ * of text is charged again on every turn after it. These are the numbers that
+ * decide the bill.
+ *
+ * Trimming is safe because the transcript is not where the facts live:
+ * `describeDraft` carries every established fact in the JSON above it, and
+ * `derive` — not the model — decides what is still open. The recent turns are
+ * there for tone and for what the family just said.
+ */
+export const CONTEXT = { recentTurns: 24, perMessage: 2000 } as const;
+
 export function transcript(history: readonly Message[]): string {
-  return history.map((m) => `${m.role === "user" ? "Family" : "You"}: ${m.content}`).join("\n");
+  const recent = history.slice(-CONTEXT.recentTurns);
+  const dropped = history.length - recent.length;
+  const lines = recent.map((m) => {
+    const who = m.role === "user" ? "Family" : "You";
+    const said = typeof m.content === "string" ? m.content : "";
+    // A long message is clipped rather than dropped: the family said it, so
+    // the beginning of it matters, but it must not be paid for indefinitely.
+    const text =
+      said.length > CONTEXT.perMessage ? `${said.slice(0, CONTEXT.perMessage)}…` : said;
+    return `${who}: ${text}`;
+  });
+  return dropped > 0
+    ? [
+        `[${dropped} earlier turn${dropped === 1 ? "" : "s"} omitted — everything` +
+          ` established is in the JSON above]`,
+        ...lines,
+      ].join("\n")
+    : lines.join("\n");
 }
 
 /**

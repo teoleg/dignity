@@ -85,7 +85,14 @@ it is a doorstop. Three things keep that bounded:
   backstop, and the only one that holds if the passcode leaks.
 - **Size limits on each request** (`LIMITS` in `api/chat.ts`): a capped
   number of turns and characters, so one call cannot be inflated into a
-  thousand calls' worth of tokens.
+  thousand calls' worth of tokens. The input box caps what one message can
+  hold, so a tester finds out before sending rather than after.
+- **A bound on what each turn sends** (`CONTEXT` in `conversation.ts`). The
+  transcript is re-sent on every turn, so without this the price of a turn
+  grows with the conversation and one pasted wall of text is charged again on
+  every turn after it. Only the recent turns go, each clipped — safe because
+  the facts travel as JSON above the transcript, not in it. The cost of a
+  turn is now flat rather than rising.
 - **A short-lived key.** Rotating it every month or two, as above, ends any
   leak you never noticed.
 
