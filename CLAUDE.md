@@ -363,6 +363,7 @@ the images, and do not put real names or dates into committed files.
 ### Repository layout (as it stands)
 
 ```
+README.md               project overview, for anyone arriving at the repo
 CLAUDE.md               this file
 package.json            npm test · npm run typecheck
 src/lib/                the tested core — see "What is built"
