@@ -8,7 +8,7 @@ Guidance for AI assistants working in this repository.
 
 **The deterministic core exists and is tested.** `src/lib/` holds the
 character table, the Hebrew date logic, the inscription composer, the form
-renderer, the translation vetting and the model-driven dialogue, with 150
+renderer, the translation vetting and the model-driven dialogue, with 156
 passing tests.
 
 **Running the dialogue needs `ANTHROPIC_API_KEY`.** Everything else runs
@@ -18,7 +18,7 @@ Gregorian date in, a filled PDF of the vendor's own form out. There is no
 application around it yet — no Next.js app, no database, no UI.
 
 ```
-npm test          # vitest, 150 tests
+npm test          # vitest, 156 tests
 npm run typecheck # tsc --noEmit, strict
 npx tsx scripts/render-sample.ts <blank-image> out.pdf
 npm run build:web  # bundle src/browser for an artifact page
@@ -282,6 +282,14 @@ Design notes that are easy to undo by accident:
 - **One question on screen at a time.** Re-asking replaces the bubble that
   was waiting; two live copies of the same buttons is a page where the family
   answers the wrong one.
+- **`api/chat.ts` fails closed.** With no `DIGNITY_PASSCODE` set it refuses
+  every request rather than serving an open endpoint that spends someone's
+  credit — the person who forgot to set it is exactly the person who would
+  not notice. It also caps request size (`LIMITS`): cost follows how much
+  text reaches the model, so an uncapped history is a cost amplifier for
+  anyone past the passcode. The key is read here and nowhere else; the bundle
+  contains no key and calls only `/api/chat`. See `DEPLOY.md` § "Where the
+  API key is, and where it is not".
 - **`conversation.ts` must never import the SDK.** It is shared by the server
   and the browser bundle; a driver moves a turn across the wire and hands it
   to `applyTurn`. Both drivers build the prompt with `promptFor`, so the
@@ -382,6 +390,7 @@ CLAUDE.md               this file
 package.json            npm test · npm run typecheck
 src/lib/                the tested core — see "What is built"
 src/lib/__tests__/      150 tests
+api/__tests__/          6 tests: what one request may carry
 src/browser/            browser bundle for the artifact page
 scripts/render-sample.ts  dev utility: fill a blank and write a PDF
 docs/domain/

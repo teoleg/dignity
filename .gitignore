@@ -9,6 +9,11 @@ dist/
 
 # Build output.
 public/app.js
+
+# Anything that could hold the API key. `vercel env pull` writes .env.local.
+.env
+.env.*
+!.env.example
 .next/
 coverage/
 

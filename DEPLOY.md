@@ -57,12 +57,44 @@ You get a URL like `dignity-xxxx.vercel.app`. Send it to your testers with
 the passcode. They open it, type in whatever language they are comfortable with,
 and the stone builds as they go.
 
-## What the passcode is and is not
+## Where the API key is, and where it is not
 
-It stops a forwarded link from quietly spending your credit. It is not
-security: anyone with the code is in, and it is stored in their browser so
-they enter it once. That is the right amount for five colleagues and the
-wrong amount for anything real.
+Verified, not asserted:
+
+- The key is read only in `api/chat.ts`, which runs on Vercel's server. It is
+  never sent to a browser, and `grep` over the built bundle finds no key, no
+  `x-api-key`, and no call to `api.anthropic.com` — the page talks only to
+  `/api/chat` on its own origin.
+- Nothing injects environment variables into the bundle. The build defines
+  exactly one value, the build stamp.
+- No key-shaped string appears in any commit in the repository's history, and
+  no `.env` file has ever been committed. `.gitignore` now covers `.env*`,
+  because `vercel env pull` writes `.env.local` next to your source.
+- The provider's own errors are never returned to the browser. They go to the
+  server log; the page sees "Could not reach Claude."
+
+So a tester watching their own network traffic sees their conversation going
+to `/api/chat` over HTTPS and a reply coming back. The key is not in either.
+
+**What is actually exposed is the passcode, and therefore the spend.** It
+travels in a request header, so anyone who has it — or who is handed the link
+by a tester — can spend your credit until you change it. It is not security;
+it is a doorstop. Three things keep that bounded:
+
+- **A spending limit on the key** at console.anthropic.com. This is the real
+  backstop, and the only one that holds if the passcode leaks.
+- **Size limits on each request** (`LIMITS` in `api/chat.ts`): a capped
+  number of turns and characters, so one call cannot be inflated into a
+  thousand calls' worth of tokens.
+- **A short-lived key.** Rotating it every month or two, as above, ends any
+  leak you never noticed.
+
+There is **no rate limiting**, so someone with the passcode can call the
+endpoint as fast as they like, and a guessable passcode can be attacked
+without any lockout. Use something unguessable, not a word. Proper limiting
+needs shared state a serverless function does not have — the spending limit
+is what stands in for it, and that is the honest trade for a build with five
+testers.
 
 ## Replacing the API key
 
