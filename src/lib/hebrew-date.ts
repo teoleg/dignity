@@ -42,16 +42,15 @@ export type DateOfDeath =
    */
   | { status: "ambiguous"; ifDaytime: HebrewDate; ifAfterSunset: HebrewDate }
   /**
-   * The hour could not be found and the *family* chose which date to engrave.
+   * The hour could not be found, and a date is being used anyway.
    *
-   * Not the same as `resolved`: nobody learned the hour. It is here because
-   * an old death — a grandparent in 1945 — has nobody left to ask, and a
-   * date that can never be settled would mean no stone at all. The system
-   * still never picks; it only records that a person did, and carries the
-   * date they did not choose so the choice stays visible everywhere the
-   * inscription is checked.
+   * Never the same as `resolved`: nobody learned the hour. `by` says who
+   * settled it — the family pressing a button, or the default, which follows
+   * the civil date as given (ADR 0008). Either way the date that was *not*
+   * used is carried along, so the state is visible everywhere the
+   * inscription is read back and can be swapped in one tap.
    */
-  | { status: "chosen"; hebrew: HebrewDate; instead: HebrewDate };
+  | { status: "chosen"; hebrew: HebrewDate; instead: HebrewDate; by: "family" | "as-given" };
 
 function render(h: HDate): HebrewDate {
   // renderGematriya() returns the month pointed — `שְׁבָט`, `כִּסְלֵו`. The form has no
@@ -100,19 +99,21 @@ export function hebrewDateOfDeath(civil: Date, when: TimeOfDeath): DateOfDeath {
 }
 
 /**
- * Record the family's decision when the hour cannot be found.
+ * Settle an unknown hour — by the family's decision, or by the default.
  *
- * Only an ambiguous date can be chosen from, and only by passing which one:
- * there is no default, and no way to call this without naming a choice.
+ * Only an ambiguous date can be settled this way, and the caller must name
+ * which date and who is naming it. Nothing here guesses; `derive` applies the
+ * default and says in the inscription that it did (ADR 0008).
  */
 export function chooseWhenUnknown(
   d: DateOfDeath,
   which: "daytime" | "after-sunset",
+  by: "family" | "as-given" = "family",
 ): DateOfDeath {
   if (d.status !== "ambiguous") return d;
   return which === "daytime"
-    ? { status: "chosen", hebrew: d.ifDaytime, instead: d.ifAfterSunset }
-    : { status: "chosen", hebrew: d.ifAfterSunset, instead: d.ifDaytime };
+    ? { status: "chosen", hebrew: d.ifDaytime, instead: d.ifAfterSunset, by }
+    : { status: "chosen", hebrew: d.ifAfterSunset, instead: d.ifDaytime, by };
 }
 
 /**

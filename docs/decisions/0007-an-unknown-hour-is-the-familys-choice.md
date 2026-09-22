@@ -1,7 +1,13 @@
 # 0007. An unknown hour is the family's choice, not ours
 
 Date: 2026-09-22
-Status: Accepted
+Status: Superseded by ADR 0008
+
+> **Superseded by ADR 0008.** Blocking until the family chose was still a
+> wall: a family who cannot find the hour cannot pick a date either. An
+> unknown hour now follows the date as given, and says so. What survives from
+> this ADR: the `chosen` state, the date not used being carried alongside,
+> and the rule that a settled date never reads as a known one.
 
 ## Context
 

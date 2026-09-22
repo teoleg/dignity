@@ -58,8 +58,10 @@ Hebrew output is guessed.
 ### A4. An hour nobody can find — needs a rabbi
 
 For an old death there may be no one left who knows whether it was before or
-after sunset, so the Hebrew date is two dates a day apart. ADR 0007 has the
-family choose, and the app recommends nothing.
+after sunset, so the Hebrew date is two dates a day apart. ADR 0008 uses the date as
+given, says so on the record, and lets the family swap in one press. If the
+death was after sunset, the yahrzeit is a day out — this is the question that
+would fix that.
 
 - [ ] Is there an accepted practice — halachic, or local to this community —
       for which of the two dates to use when the hour cannot be found? If

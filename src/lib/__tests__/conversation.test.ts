@@ -106,15 +106,29 @@ describe("the date is computed, never taken from the model", () => {
     expect(lines[2]?.hebrew).toBe("נ״פ ט״ז שבט תשפ״ד");
   });
 
-  it("blocks while the time of death is unknown", () => {
-    const { blockers } = derive({ ...complete, timeOfDeath: "unknown" });
-    expect(blockers.join(" ")).toContain("Time of death unknown");
+  // ADR 0008: an hour nobody can find follows the date as given rather than
+  // stopping the order. It must never read as a date somebody knew.
+  it("uses the date as given when the time of death is unknown", () => {
+    const { lines, blockers } = derive({ ...complete, timeOfDeath: "unknown" });
+    expect(blockers).toHaveLength(0);
+    expect(lines[2]?.hebrew).toBe("נ״פ ט״ו שבט תשפ״ד");
   });
 
-  it("treats a missing time as unknown rather than assuming daytime", () => {
+  it("says in the gloss that the hour was unknown, and what the other date is", () => {
+    const { lines } = derive({ ...complete, timeOfDeath: "unknown" });
+    expect(lines[2]?.english).toContain("hour of death is unknown");
+    expect(lines[2]?.english).toContain("date as given");
+    expect(lines[2]?.english).toContain("16 Sh'vat 5784");
+  });
+
+  it("treats a missing time the same way, never as a known daytime death", () => {
     const d = { ...complete };
     delete d.timeOfDeath;
-    expect(derive(d).blockers.join(" ")).toContain("Time of death unknown");
+    expect(derive(d).lines[2]?.english).toContain("hour of death is unknown");
+  });
+
+  it("says nothing of the sort when the hour is actually known", () => {
+    expect(derive(complete).lines[2]?.english).toBe("Died 15 Sh'vat 5784");
   });
 });
 
@@ -245,17 +259,22 @@ describe("choosing a date when the hour is lost", () => {
     });
   });
 
-  it("offers nothing once the family has chosen", () => {
-    expect(candidateDates({ ...unknown, dateWhenUnknown: "daytime" })).toBeNull();
+  it("keeps offering both, so a choice can be changed after it is made", () => {
+    expect(candidateDates({ ...unknown, dateWhenUnknown: "daytime" })).toEqual({
+      daytime: "15 Sh'vat 5784",
+      afterSunset: "16 Sh'vat 5784",
+    });
   });
 
   it("offers nothing when the hour is known", () => {
     expect(candidateDates(complete)).toBeNull();
   });
 
-  it("unblocks on the family's choice, and only on it", () => {
-    expect(derive(unknown).blockers.join(" ")).toContain("Time of death unknown");
-    expect(derive({ ...unknown, dateWhenUnknown: "after-sunset" }).blockers).toHaveLength(0);
+  it("marks the family's own choice as theirs, not as the default", () => {
+    expect(derive(unknown).lines[2]?.english).toContain("date as given");
+    expect(derive({ ...unknown, dateWhenUnknown: "daytime" }).lines[2]?.english).toContain(
+      "chosen by the family",
+    );
   });
 
   it("engraves the date chosen, not the other one", () => {

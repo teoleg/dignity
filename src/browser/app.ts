@@ -216,56 +216,38 @@ function recompute() {
 }
 
 /**
- * When the hour cannot be found, the family chooses which date is engraved.
+ * What happens when nobody knows the hour.
  *
- * The alternative is a stone that never gets made. An old death — a
- * grandparent in 1945 — has nobody left to ask, and "unknown" blocked the
- * order permanently. So the two dates are put in front of the family in
- * English, with what the choice means, and they decide. The page never picks
- * one, never marks one as usual or likely, and records that it was a choice:
- * the check list reads it back as "the hour is unknown and this date was
- * chosen", alongside the date that was not.
+ * The date given is used as it stands, with no sunset adjustment, and the
+ * order carries on (ADR 0008). It is not silent: the family is told which
+ * date is being engraved, what the other one would be, and can swap to it
+ * with one press. The inscription's own gloss says the hour was unknown, so
+ * this can never be mistaken later for a date somebody knew.
  */
-function offerTheTwoDates() {
+function noteTheDateUsed() {
   const both = candidateDates(draft);
   if (!both) return;
+  const usingEvening = draft.dateWhenUnknown === "after-sunset";
+  const using = usingEvening ? both.afterSunset : both.daytime;
+  const other = usingEvening ? both.daytime : both.afterSunset;
   const el = ask(
-    `<p><strong>Then the date has to be chosen.</strong> The Jewish day begins at
-       sunset, so there are two, and nothing now can tell them apart:</p>
-     <button class="btn wide" id="dday" type="button">${esc(both.daytime)}</button>
-     <p class="hint">if it was during the day</p>
-     <button class="btn wide" id="deve" type="button">${esc(both.afterSunset)}</button>
-     <p class="hint">if it was after sunset</p>
-     <p class="hint">This is the date the family keeps every year. If it matters to
-       you, the rabbi or the funeral home may know the hour, or which date to use —
-       there is no hurry, and the buttons stay here.</p>
-     <button class="btn wide ghost" id="dwait" type="button">I will ask someone first</button>`,
+    `<p>Nobody knows the hour, so I am using the date as you gave it:
+       <strong>${esc(using)}</strong>.</p>
+     <p class="hint">The Jewish day begins at sunset. Had it been after sunset the
+       date would be ${esc(other)} — that is the date kept every year, so if anyone
+       does remember, change it here. The order form says the hour was unknown
+       either way.</p>
+     <button class="btn wide ghost" id="dswap" type="button">Use ${esc(other)} instead</button>`,
   );
-  const take = (which: "daytime" | "after-sunset", date: string) => {
+  el.querySelector("#dswap")?.addEventListener("click", () => {
+    const which = usingEvening ? "daytime" : "after-sunset";
     draft = { ...draft, dateWhenUnknown: which };
     recompute();
     const box = el.querySelector(".bubble");
-    if (box) {
-      box.innerHTML =
-        `<p class="hint">Using ${esc(date)}. The check list says the hour was ` +
-        `unknown and that this date was chosen.</p>`;
-    }
+    if (box) box.innerHTML = `<p class="hint">Using ${esc(other)}.</p>`;
     render();
-    void send(`Nobody knows the hour. Use ${date}.`, false);
+    void send(`Use ${other} — the date if it was after sunset.`, false);
     offerNext();
-  };
-  el.querySelector("#dday")?.addEventListener("click", () => take("daytime", both.daytime));
-  el.querySelector("#deve")?.addEventListener("click", () =>
-    take("after-sunset", both.afterSunset));
-  el.querySelector("#dwait")?.addEventListener("click", () => {
-    const box = el.querySelector(".bubble");
-    if (box) {
-      box.innerHTML =
-        `<p class="hint">Left open. Press <strong>Make the form</strong> when you ` +
-        `know, or when you have decided.</p>`;
-    }
-    // The question is not answered, so it may be asked again.
-    asked.sunset = "";
   });
 }
 
@@ -327,7 +309,7 @@ function offerNext() {
       recompute();
       if (t === "unknown") {
         settle("Nobody knows what hour it was.");
-        offerTheTwoDates();
+        noteTheDateUsed();
       } else {
         settle(said);
       }
@@ -532,8 +514,6 @@ function explainMissing() {
     asked.sunset = "";
   }
   offerNext();
-  // An hour nobody knows is answered by choosing a date, not by asking again.
-  if (draft.timeOfDeath === "unknown" && !draft.dateWhenUnknown) offerTheTwoDates();
   // Anything else is a fact only the family can give, so ask for it there.
   if (blockers.some((b) => b.startsWith("Still needed"))) {
     void send("I would like the order form now. What do you still need from me?", false);

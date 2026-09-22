@@ -216,7 +216,7 @@ export type ParsedTurn = z.infer<typeof TurnSchema>;
  * to put them on buttons. Null unless the date is genuinely ambiguous.
  */
 export function candidateDates(d: Draft): { daytime: string; afterSunset: string } | null {
-  if (!d.diedOn || d.timeOfDeath !== "unknown" || d.dateWhenUnknown) return null;
+  if (!d.diedOn || d.timeOfDeath !== "unknown") return null;
   const [y, m, day] = d.diedOn.split("-").map(Number) as [number, number, number];
   const both = hebrewDateOfDeath(new Date(y, m - 1, day), "unknown");
   return both.status === "ambiguous"
@@ -355,8 +355,13 @@ export function derive(d: Draft): Derived {
   }
   const [y, m, day] = d.diedOn!.split("-").map(Number) as [number, number, number];
   let death = hebrewDateOfDeath(new Date(y, m - 1, day), d.timeOfDeath ?? "unknown");
-  // Only a decision the family actually made can settle an unknown hour.
-  if (d.dateWhenUnknown) death = chooseWhenUnknown(death, d.dateWhenUnknown);
+  // An hour nobody can find follows the date as given, and the inscription
+  // says so (ADR 0008). The family's own choice outranks that default.
+  if (death.status === "ambiguous") {
+    death = d.dateWhenUnknown
+      ? chooseWhenUnknown(death, d.dateWhenUnknown, "family")
+      : chooseWhenUnknown(death, "daytime", "as-given");
+  }
   const decedent: Decedent = {
     gender: d.gender!,
     hebrewGiven: d.hebrewGiven!,

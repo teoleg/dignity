@@ -117,14 +117,20 @@ function dateLine(death: DateOfDeath): Line {
   if (death.status === "resolved") {
     return line(`${DIED} ${death.hebrew.text}`, `Died ${death.hebrew.english}`, "standard");
   }
-  // The family chose, knowing the hour could not be found. Not blocked — but
-  // the gloss carries the choice, so it is visible wherever the lines are
-  // read back, including the check list the family signs off on.
+  // The hour could not be found. Not blocked — but the gloss says so, and
+  // names the date not used, so this can never read as a date someone knew.
+  // Visible wherever the lines are read back, including the check list.
   if (death.status === "chosen") {
+    // The wording has to stay true whichever date is in use: "after sunset it
+    // would be X" is only right when the date as given is the one engraved.
+    const how =
+      death.by === "family"
+        ? `this date was chosen by the family; the other possible date is ${death.instead.english}`
+        : `this is the date as given, with no sunset adjustment; after sunset it ` +
+          `would be ${death.instead.english}`;
     return line(
       `${DIED} ${death.hebrew.text}`,
-      `Died ${death.hebrew.english} — the hour of death is unknown and this date ` +
-        `was chosen by the family; the other possible date is ${death.instead.english}`,
+      `Died ${death.hebrew.english} — the hour of death is unknown and ${how}`,
       "standard",
     );
   }
