@@ -26,7 +26,7 @@
 
 import { z } from "zod";
 import { BOXES_PER_LINE, encodeLine } from "./form-table.js";
-import { hebrewDateOfDeath, type TimeOfDeath } from "./hebrew-date.js";
+import { chooseWhenUnknown, hebrewDateOfDeath, type TimeOfDeath } from "./hebrew-date.js";
 import {
   compose,
   capacity,
@@ -53,6 +53,14 @@ export interface Draft {
   /** yyyy-mm-dd */
   diedOn?: string;
   timeOfDeath?: TimeOfDeath;
+  /**
+   * Which of the two dates to engrave when the hour cannot be found.
+   *
+   * Set only by the family pressing a button that names the date, never by
+   * the model and never by a default. Meaningless unless `timeOfDeath` is
+   * "unknown"; the inscription records that it was a choice.
+   */
+  dateWhenUnknown?: "daytime" | "after-sunset";
   extra?: FamilyLine;
 }
 
@@ -135,6 +143,9 @@ WHAT YOU NEED, roughly in this order:
 6. Whether the death was during the day or in the evening. The Jewish day
    begins at sunset, so an evening death is recorded on the following day.
    Explain that plainly. If nobody knows, record "unknown" — do not guess.
+   For an old death there may be nobody left to ask. The page then offers the
+   family the two possible dates and they choose one; that is their decision
+   and never yours. Do not suggest which, and never write either in Hebrew.
 7. Optionally, anything the family wants to add in their own words, which you
    put into Hebrew in extraLine.
 
@@ -199,6 +210,19 @@ export function promptFor(draft: Draft, history: readonly Message[]): string {
 }
 
 export type ParsedTurn = z.infer<typeof TurnSchema>;
+
+/**
+ * The two dates an unknown hour leaves open, in English, for a page that has
+ * to put them on buttons. Null unless the date is genuinely ambiguous.
+ */
+export function candidateDates(d: Draft): { daytime: string; afterSunset: string } | null {
+  if (!d.diedOn || d.timeOfDeath !== "unknown" || d.dateWhenUnknown) return null;
+  const [y, m, day] = d.diedOn.split("-").map(Number) as [number, number, number];
+  const both = hebrewDateOfDeath(new Date(y, m - 1, day), "unknown");
+  return both.status === "ambiguous"
+    ? { daytime: both.ifDaytime.english, afterSunset: both.ifAfterSunset.english }
+    : null;
+}
 
 /** What the library can work out on its own, with no model involved. */
 export type Derived = Pick<Turn, "lines" | "capacity" | "blockers">;
@@ -330,6 +354,9 @@ export function derive(d: Draft): Derived {
     return { lines: [], capacity: capacity([]), blockers: [`Still needed: ${missing.join(", ")}.`] };
   }
   const [y, m, day] = d.diedOn!.split("-").map(Number) as [number, number, number];
+  let death = hebrewDateOfDeath(new Date(y, m - 1, day), d.timeOfDeath ?? "unknown");
+  // Only a decision the family actually made can settle an unknown hour.
+  if (d.dateWhenUnknown) death = chooseWhenUnknown(death, d.dateWhenUnknown);
   const decedent: Decedent = {
     gender: d.gender!,
     hebrewGiven: d.hebrewGiven!,
@@ -339,7 +366,7 @@ export function derive(d: Draft): Derived {
     englishGiven: d.englishGiven ?? d.hebrewGivenSaid ?? d.hebrewGiven!,
     englishFather: d.englishFather ?? d.hebrewFatherSaid ?? d.hebrewFather!,
     // The model never supplies this. It is computed.
-    death: hebrewDateOfDeath(new Date(y, m - 1, day), d.timeOfDeath ?? "unknown"),
+    death,
   };
   const lines = compose(decedent, d.extra);
   const stop = blockers(lines);

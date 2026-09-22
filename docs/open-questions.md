@@ -55,6 +55,19 @@ Hebrew output is guessed.
       "additional characters" process for names that need אַ, פֿ, etc.?
 - [ ] What is the fallback when a name cannot be spelled with these 31 codes?
 
+### A4. An hour nobody can find — needs a rabbi
+
+For an old death there may be no one left who knows whether it was before or
+after sunset, so the Hebrew date is two dates a day apart. ADR 0007 has the
+family choose, and the app recommends nothing.
+
+- [ ] Is there an accepted practice — halachic, or local to this community —
+      for which of the two dates to use when the hour cannot be found? If
+      there is, the screen that asks should say so instead of leaving the
+      family to pick blind.
+- [ ] Does the yahrzeit follow the date engraved, or can they differ? The
+      copy currently tells the family this is the date kept every year.
+
 ---
 
 ## B. Product scope

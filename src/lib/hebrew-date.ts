@@ -40,7 +40,18 @@ export type DateOfDeath =
    * block on this rather than pick one. Consuming code that treats
    * `ambiguous` as "use the first" has reintroduced the bug.
    */
-  | { status: "ambiguous"; ifDaytime: HebrewDate; ifAfterSunset: HebrewDate };
+  | { status: "ambiguous"; ifDaytime: HebrewDate; ifAfterSunset: HebrewDate }
+  /**
+   * The hour could not be found and the *family* chose which date to engrave.
+   *
+   * Not the same as `resolved`: nobody learned the hour. It is here because
+   * an old death — a grandparent in 1945 — has nobody left to ask, and a
+   * date that can never be settled would mean no stone at all. The system
+   * still never picks; it only records that a person did, and carries the
+   * date they did not choose so the choice stays visible everywhere the
+   * inscription is checked.
+   */
+  | { status: "chosen"; hebrew: HebrewDate; instead: HebrewDate };
 
 function render(h: HDate): HebrewDate {
   // renderGematriya() returns the month pointed — `שְׁבָט`, `כִּסְלֵו`. The form has no
@@ -86,6 +97,22 @@ export function hebrewDateOfDeath(civil: Date, when: TimeOfDeath): DateOfDeath {
         ifAfterSunset: render(nextDay),
       };
   }
+}
+
+/**
+ * Record the family's decision when the hour cannot be found.
+ *
+ * Only an ambiguous date can be chosen from, and only by passing which one:
+ * there is no default, and no way to call this without naming a choice.
+ */
+export function chooseWhenUnknown(
+  d: DateOfDeath,
+  which: "daytime" | "after-sunset",
+): DateOfDeath {
+  if (d.status !== "ambiguous") return d;
+  return which === "daytime"
+    ? { status: "chosen", hebrew: d.ifDaytime, instead: d.ifAfterSunset }
+    : { status: "chosen", hebrew: d.ifAfterSunset, instead: d.ifDaytime };
 }
 
 /**

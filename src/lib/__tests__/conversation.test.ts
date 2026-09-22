@@ -1,5 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { applyTurn, derive, withoutHebrew, type Draft, type ParsedTurn } from "../conversation.js";
+import {
+  applyTurn,
+  candidateDates,
+  derive,
+  withoutHebrew,
+  type Draft,
+  type ParsedTurn,
+} from "../conversation.js";
 
 /**
  * The model drives the conversation; these tests cover what happens to what
@@ -225,5 +232,42 @@ describe("Hebrew never reaches the family through the prose", () => {
   it("cleans the reply on the one path every driver goes through", () => {
     const { reply } = applyTurn({}, turn({ reply: "Her name is שרה in Hebrew." }));
     expect(hasHebrew(reply)).toBe(false);
+  });
+});
+
+describe("choosing a date when the hour is lost", () => {
+  const unknown: Draft = { ...complete, timeOfDeath: "unknown" };
+
+  it("offers both dates in English while nothing is chosen", () => {
+    expect(candidateDates(unknown)).toEqual({
+      daytime: "15 Sh'vat 5784",
+      afterSunset: "16 Sh'vat 5784",
+    });
+  });
+
+  it("offers nothing once the family has chosen", () => {
+    expect(candidateDates({ ...unknown, dateWhenUnknown: "daytime" })).toBeNull();
+  });
+
+  it("offers nothing when the hour is known", () => {
+    expect(candidateDates(complete)).toBeNull();
+  });
+
+  it("unblocks on the family's choice, and only on it", () => {
+    expect(derive(unknown).blockers.join(" ")).toContain("Time of death unknown");
+    expect(derive({ ...unknown, dateWhenUnknown: "after-sunset" }).blockers).toHaveLength(0);
+  });
+
+  it("engraves the date chosen, not the other one", () => {
+    const { lines } = derive({ ...unknown, dateWhenUnknown: "after-sunset" });
+    expect(lines[2]?.hebrew).toBe("נ״פ ט״ז שבט תשפ״ד");
+  });
+
+  it("says in the gloss that the hour was unknown and this was a choice", () => {
+    const { lines } = derive({ ...unknown, dateWhenUnknown: "daytime" });
+    expect(lines[2]?.english).toContain("hour of death is unknown");
+    expect(lines[2]?.english).toContain("chosen by the family");
+    // The date not taken stays visible, so the choice can be checked.
+    expect(lines[2]?.english).toContain("16 Sh'vat 5784");
   });
 });

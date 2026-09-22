@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { hebrewDateOfDeath, isBlocking } from "../hebrew-date.js";
+import { chooseWhenUnknown, hebrewDateOfDeath, isBlocking } from "../hebrew-date.js";
 import { encodeLine } from "../form-table.js";
 import { hasNikud } from "../hebrew-text.js";
 
@@ -147,5 +147,37 @@ describe("leap years", () => {
     }
     expect(seen.has("Adar I")).toBe(true);
     expect(seen.has("Adar II")).toBe(true);
+  });
+});
+
+/**
+ * An old death has nobody left to ask. "Unknown" blocked the order for good,
+ * which for a 1945 death means no stone at all — so the family may choose
+ * which of the two dates is engraved. The system still never picks.
+ */
+describe("when the hour cannot be found, the family chooses", () => {
+  const both = hebrewDateOfDeath(JAN_25, "unknown");
+
+  it("keeps blocking until someone actually chooses", () => {
+    expect(isBlocking(both)).toBe(true);
+  });
+
+  it("records the choice and the date that was not chosen", () => {
+    const c = chooseWhenUnknown(both, "daytime");
+    if (c.status !== "chosen") throw new Error("expected a chosen date");
+    expect(c.hebrew.text).toBe("ט״ו שבט תשפ״ד");
+    expect(c.instead.text).toBe("ט״ז שבט תשפ״ד");
+    expect(isBlocking(c)).toBe(false);
+  });
+
+  it("takes the evening date when that is what was chosen", () => {
+    const c = chooseWhenUnknown(both, "after-sunset");
+    if (c.status !== "chosen") throw new Error("expected a chosen date");
+    expect(c.hebrew.text).toBe("ט״ז שבט תשפ״ד");
+  });
+
+  it("leaves a date that was never ambiguous alone", () => {
+    const resolvedDate = hebrewDateOfDeath(JAN_25, "daytime");
+    expect(chooseWhenUnknown(resolvedDate, "after-sunset")).toBe(resolvedDate);
   });
 });

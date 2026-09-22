@@ -8,7 +8,7 @@ Guidance for AI assistants working in this repository.
 
 **The deterministic core exists and is tested.** `src/lib/` holds the
 character table, the Hebrew date logic, the inscription composer, the form
-renderer, the translation vetting and the model-driven dialogue, with 129
+renderer, the translation vetting and the model-driven dialogue, with 139
 passing tests.
 
 **Running the dialogue needs `ANTHROPIC_API_KEY`.** Everything else runs
@@ -18,7 +18,7 @@ Gregorian date in, a filled PDF of the vendor's own form out. There is no
 application around it yet — no Next.js app, no database, no UI.
 
 ```
-npm test          # vitest, 129 tests
+npm test          # vitest, 139 tests
 npm run typecheck # tsc --noEmit, strict
 npx tsx scripts/render-sample.ts <blank-image> out.pdf
 npm run build:web  # bundle src/browser for an artifact page
@@ -127,7 +127,9 @@ The short version of the hard parts:
 
 - **The Hebrew day starts at sunset.** Date of death is not enough; we need
   time and place. When time is unknown, the Hebrew date is genuinely
-  ambiguous — flag it, never guess.
+  ambiguous — flag it, never guess. If the hour cannot be found at all, the
+  *family* chooses which date is engraved and the record says they did
+  (ADR 0007); the system still never picks.
 - **Never hand-roll the Hebrew calendar.** Use `@hebcal/core` (JS/TS) or
   `pyluach` (Python).
 - **Gematria 15 and 16 are ט״ו and ט״ז**, not י״ה and י״ו, which spell a name
@@ -187,6 +189,14 @@ Design notes that are easy to undo by accident:
 - `hebrewDateOfDeath(..., "unknown")` returns **both** candidate dates and
   resolves nothing. Code that treats `ambiguous` as "use `ifDaytime`" has
   reintroduced the bug the type exists to prevent.
+- **An hour nobody can find is the family's choice** (ADR 0007). A 1945 death
+  has no one left to ask, and "blocked until someone knows" meant the order
+  could never be finished. So `DateOfDeath` has a third state, `chosen`,
+  reachable only through `chooseWhenUnknown(date, which)` — no default, and
+  the model cannot set it; only a button the family presses. It carries the
+  date *not* chosen, and the gloss says the hour was unknown and that this
+  was a choice, so a chosen date can never read as a known one. Unknown with
+  no choice made still blocks, exactly as before.
 - **`stripPointing` is for hebcal output only, and it takes the dagesh too.**
   hebcal renders months fully pointed (`כִּסְלֵו`, `תִּשְׁרֵי`) and there the dagesh
   is pointing, not spelling. Keeping it broke two ways at once: Kislev,
@@ -352,7 +362,7 @@ the images, and do not put real names or dates into committed files.
 CLAUDE.md               this file
 package.json            npm test · npm run typecheck
 src/lib/                the tested core — see "What is built"
-src/lib/__tests__/      129 tests
+src/lib/__tests__/      139 tests
 src/browser/            browser bundle for the artifact page
 scripts/render-sample.ts  dev utility: fill a blank and write a PDF
 docs/domain/
@@ -366,6 +376,7 @@ docs/decisions/         architecture decision records
   0004-render-by-overlaying-the-vendor-blank.md
   0005-english-first-chat-led-interface.md
   0006-translation-propose-vet-decide.md
+  0007-an-unknown-hour-is-the-familys-choice.md
 docs/open-questions.md  what we don't know yet
 samples/                LOCAL ONLY — gitignored, never committed
 ```
